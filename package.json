@@ -1,0 +1,18 @@
+{
+  "name": "prefab-package",
+  "version": "1.0.0",
+  "description": "A CLI tool for the bot-prefab.",
+  "main": "index.js",
+  "bin": {
+    "prefab": "index.js"
+  },
+  "keywords": [],
+  "author": "https://github.com/canta-slaus",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "git+https://github.com/discordjs/discord.js.git",
+    "fs-extra": "^10.0.0",
+    "mongoose": "^5.13.5",
+    "prompts": "^2.4.1"
+  }
+}
