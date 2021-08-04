@@ -13,7 +13,6 @@ const dir = process.cwd();
     try {
         const { stdout } = await exec("npm list -g");
         const src = stdout.split("\n")[0];
-        console.log(src);
         const response = await prompts([
             {
                 type: "select",
@@ -52,21 +51,7 @@ const dir = process.cwd();
             await fs.mkdir(response.name);
             console.log("Created project...");
 
-            await copy(src + "/node_modules/prefab-package", path.join(dir, `./${response.name}`));
-
-            // console.log("Cloning bot-prefab from GitHub...");
-            // await exec(`git clone https://github.com/canta-slaus/bot-prefab.git .`, { cwd: `./${response.name}` });
-
-            // const files = await fs.readdir(path.join(dir, `./${response.name}`));
-            // for (const file of files) {
-            //     if (file !== "js") {
-            //         await fs.rm(path.join(dir, `./${response.name}/${file}`), { recursive: true, force: true });
-            //     }
-            // }
-
-            // await move(path.join(dir, `./${response.name}/js`), path.join(dir, `./${response.name}`))
-
-            // console.log("Cloned bot-prefab from GitHub...");
+            await copy(src + "/node_modules/bot-prefab-package", path.join(dir, `./${response.name}`));
 
             console.log("Done!");
         }
