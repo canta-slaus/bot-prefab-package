@@ -49,9 +49,13 @@ const dir = process.cwd();
         if (response.action === 'new') {
             console.log("Creating new project...");
             await fs.mkdir(response.name);
-            console.log("Created project...");
 
-            await copy(src + "/node_modules/bot-prefab-package", path.join(dir, `./${response.name}`));
+            console.log("Generating files...");
+            await copy(src + "/node_modules/bot-prefab-package/prefab", path.join(dir, `./${response.name}`));
+
+            console.log("Installing packages...");
+            await exec("npm init -y", { cwd: `./${response.name}` });
+            await exec("npm i https://github.com/discordjs/discord.js mongoose ms", { cwd: `./${response.name}` });
 
             console.log("Done!");
         }

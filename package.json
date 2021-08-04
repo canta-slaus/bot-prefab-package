@@ -13,6 +13,7 @@
     "discord.js": "git+https://github.com/discordjs/discord.js.git",
     "fs-extra": "^10.0.0",
     "mongoose": "^5.13.5",
+    "ms": "^2.1.3",
     "prompts": "^2.4.1"
   }
 }
