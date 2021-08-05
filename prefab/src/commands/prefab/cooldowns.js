@@ -25,7 +25,7 @@ module.exports = class CooldownsCommand extends Command {
      * @param {import('../../util/client')} p.client
      * @param {import('discord.js').Message} p.message
      * @param {string[]} p.args 
-     * @param {*} p.flags
+     * @param {Object.<string, *>} p.flags
      */
     async execute ({ client, message, args, flags }) {
         const command = client.commands.get(flags.command.toLowerCase());

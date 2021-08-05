@@ -11,20 +11,20 @@ const dir = process.cwd();
 
 (async () => {
     try {
-        const { stdout } = await exec("npm list -g");
-        const src = stdout.split("\n")[0];
         const response = await prompts([
             {
                 type: "select",
                 name: "action",
                 message: "What would you like to do?",
                 choices: [
-                    { title: "New project", description: "Create a new project!", value: "new" },
-                    { title: "Update", description: "Update your current project to the newest version!", value: "update", disabled: true },
-                    { title: "Add command", description: "Add a new command to the current project", value: "command", disabled: true },
-                    { title: "Add event", description: "Add a new event listener to the current project!", value: "event", disabled: true }
+                    { title: "┌ New project", description: "Create a new project!", value: "new" },
+                    { title: "├ Update", description: "Update your current project to the newest version!", value: "update", disabled: true },
+                    { title: "├ Add command", description: "Add a new command to the current project", value: "command", disabled: true },
+                    { title: "├ Add event", description: "Add a new event listener to the current project!", value: "event", disabled: true },
+                    { title: "└ Information", description: "Get some information about this CLI tool!", value: "info" }
                 ],
-                warn: "This is still WIP!"
+                warn: "This is still WIP!",
+                hint: "Use arrow keys to navigate. Hit \"ENTER\" to select."
             },
             {
                 type: (prev, values) => values.action === "new" ? "text" : null,
@@ -44,10 +44,14 @@ const dir = process.cwd();
 
                 ]
             }
-        ])
+        ]);
 
         if (response.action === 'new') {
             console.log("Creating new project...");
+
+            const { stdout } = await exec("npm list -g");
+            const src = stdout.split("\n")[0];
+
             await fs.mkdir(response.name);
 
             console.log("Generating files...");
@@ -58,6 +62,24 @@ const dir = process.cwd();
             await exec("npm i https://github.com/discordjs/discord.js mongoose ms", { cwd: `./${response.name}` });
 
             console.log("Done!");
+        } else if (response.action === "update") {
+            // Update their prefab structure used in the project
+        } else if (response.action === "command") {
+            // Add a new command following the template command
+            // Ask what category (existing or create new category)
+        } else if (response.action === "event") {
+            // Add a new event
+        } else if (response.action === "info") {
+            console.log("                                                                    ");
+            console.log("   \u001b[34;1m┌────────────────────── \u001b[34;1mbot-prefab-package \u001b[34;1m─────────────────────┐");
+            console.log("   │   \u001b[33mThis CLI was made based on my original bot-prefab to make   \u001b[34;1m│");
+            console.log("   │                 \u001b[33mcreating new projects easier.                 \u001b[34;1m│");
+            console.log("   \u001b[34;1m├───────────────────────────────────────────────────────────────┤")
+            console.log("   │   \u001b[33mGitHub: \u001b[36;1mhttps://github.com/canta-slaus/bot-prefab-package   \u001b[34;1m│");
+            console.log("   │       \u001b[33mnpm: \u001b[36;1mhttps://npmjs.com/package/bot-prefab-package       \u001b[34;1m│");
+            console.log("   │             \u001b[33mDiscord: \u001b[36;1mhttps://discord.gg/Mg347Rcpwa            \u001b[34;1m│");
+            console.log("   └───────────────────────────────────────────────────────────────┘\u001b[0m");
+            console.log("                                                                    ");
         }
     } catch (e) {
         console.log("Oops, something went wrong!");

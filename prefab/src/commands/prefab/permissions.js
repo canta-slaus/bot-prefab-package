@@ -36,7 +36,7 @@ const permissions = {
     '4': 'MANAGE_WEBHOOKS',
     '5': 'MANAGE_EMOJIS',
 };
-const permsRegEx = /^[0-4a-zA-Z]{1,31}$/
+const permsRegEx = /^[0-5a-zA-Z]{1,31}$/;
 
 module.exports = class PermissionsCommand extends Command {
     constructor (client) {
@@ -47,7 +47,8 @@ module.exports = class PermissionsCommand extends Command {
             args: [
                 {
                     type: 'SOMETHING',
-                    prompt: 'Please specify a command.'
+                    prompt: 'Please specify a command.',
+                    id: 'command'
                 }
             ],
             clientPerms: ['SEND_MESSAGES', 'EMBED_LINKS', 'ADD_REACTIONS']
@@ -59,9 +60,10 @@ module.exports = class PermissionsCommand extends Command {
      * @param {import('../../util/client')} p.client
      * @param {import('discord.js').Message} p.message
      * @param {string[]} p.args 
+     * @param {Object.<string, *>} p.flags
      */
-    async execute ({ client, message, args }) {
-        const command = client.commands.get(args[0].toLowerCase());
+    async execute ({ client, message, args, flags }) {
+        const command = client.commands.get(flags.command.toLowerCase());
         if (!command) return message.channel.send(`${message.author.username}, that command doesn't exist.`);
 
         const guildInfo = await client.guildInfo.get(message.guild.id);

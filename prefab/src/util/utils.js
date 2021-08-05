@@ -9,6 +9,52 @@ const consoleColors = {
     "ERROR": "\u001b[31m"
 };
 
+/**
+ * @param {object} p
+ * @param {import('discord.js').MessageReaction} p.reaction 
+ * @param {import('discord.js').Message} p.pageMsg 
+ * @param {import('discord.js').ReactionCollector} p.collector 
+ * @param {number} p.pageIndex
+ * @param {import('discord.js').MessageEmbed[]} p.embeds
+ */
+ async function handleReaction ({ reaction, pageMsg, collector, pageIndex, embeds }) {
+    try {
+        collector.resetTimer();
+        if (reaction.emoji.name === '⏩') {
+            if (pageIndex === embeds.length - 1) return embeds.length - 1;
+            pageIndex = embeds.length - 1;
+            await pageMsg.edit({ embeds: [embeds[pageIndex]] });
+        } else if (reaction.emoji.name === '▶️') {
+            if (pageIndex < embeds.length - 1) {
+                pageIndex++;
+                await pageMsg.edit({ embeds: [embeds[pageIndex]] });
+            } else {
+                if (pageIndex === 0) return 0;
+                pageIndex = 0;
+                await pageMsg.edit({ embeds: [embeds[pageIndex]] });
+            }
+        } else if (reaction.emoji.name === '🗑') {
+            await pageMsg.delete();
+        } else if (reaction.emoji.name === '⏪') {
+            if (pageIndex === 0) return 0;
+            pageIndex = 0;
+            await pageMsg.edit({ embeds: [embeds[pageIndex]] });
+        } else if (reaction.emoji.name === '◀️') {
+            if (pageIndex > 0) {
+                pageIndex--;
+                await pageMsg.edit({ embeds: [embeds[pageIndex]] });
+            } else {
+                if (pageIndex === embeds.length - 1) return embeds.length - 1;
+                pageIndex = embeds.length - 1;
+                await pageMsg.edit({ embeds: [embeds[pageIndex]] });
+            }
+        }
+        return pageIndex;
+    } catch (e) {
+        //
+    }
+}
+
 class Utils {
     /**
      * @param {import('./client')} client 
@@ -36,69 +82,37 @@ class Utils {
 
             let pageIndex = 0;
             let time = 30000;
-            const filter = (reaction, user) => {
-                return reactions.includes(reaction.emoji.name) && user.id === message.author.id;
-            };
 
             if (options) {
                 if (options.time) time = options.time;
             };
 
-            const collector = pageMsg.createReactionCollector({ filter, time });
+            const collector = pageMsg.createReactionCollector({ filter: (reaction, user) => reactions.includes(reaction.emoji.name) && user.id === message.author.id, time });
             collector.on('collect', async (reaction, user) => {
                 try {
-                    await reaction.users.remove(user)
-                    if (reaction.emoji.name === '⏩') {
-                        pageIndex = embeds.length - 1;
-                        await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-                    } else if (reaction.emoji.name === '▶️') {
-                        if (pageIndex < embeds.length - 1) {
-                            pageIndex++;
-                            await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-                        } else {
-                            pageIndex = 0;
-                            await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-                        }
-                    } else if (reaction.emoji.name === '⏸️') {
-                        await pageMsg.delete();
-                    } else if (reaction.emoji.name === '⏪') {
-                        pageIndex = 0;
-                        await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-                    } else if (reaction.emoji.name === '◀️') {
-                        if (pageIndex > 0) {
-                            pageIndex--;
-                            await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-                        } else {
-                            pageIndex = embeds.length - 1;
-                            await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-                        }
-                    } else if (reaction.emoji.name === '🔢') {
-                        let msg = await this.getReply(message, { time: 7500, regexp: /^\d+$/ });
-                        if (!msg) return;
-
-                        let num = parseInt(msg.content);
-
-                        if (num > embeds.length) num = embeds.length - 1;
-                        else num--;
-
-                        pageIndex = num;
-
-                        await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-                    }
+                    pageIndex = await handleReaction({ reaction: reaction, collector: collector, embeds: embeds, pageMsg: pageMsg, pageIndex: pageIndex });
                 } catch (e) {
-                    return;
+                    //
+                }
+            });
+
+            collector.on('remove', async (reaction, user) => {
+                try {
+                    pageIndex = await handleReaction({ reaction: reaction, collector: collector, embeds: embeds, pageMsg: pageMsg, pageIndex: pageIndex });
+                } catch (e) {
+                    //
                 }
             });
 
             collector.on('end', async () => {
                 try {
-                    await pageMsg.reactions.removeAll()
+                    await pageMsg.reactions.removeAll();
                 } catch (e) {
                     //
                 }
             });
         } catch (e) {
-            return;
+            //
         }
     }
 
@@ -117,7 +131,7 @@ class Utils {
         let time = 30000;
         let user = message.author;
         let words = [];
-    
+
         if (options) {
             if (options.time) time = options.time;
             if (options.user) user = options.user;
@@ -239,7 +253,7 @@ class Utils {
      * @param {string} data.userID - The ID of the user you're constructing this embed for
      */
     async CustomEmbed({ userID }) {
-        let userInfo = await this.client.profileInfo.get(userID);
+        const userInfo = await this.client.profileInfo.get(userID);
     
         const embed = new MessageEmbed()
             .setColor(embedColors[userInfo.prefab.embedColor]);
@@ -248,8 +262,8 @@ class Utils {
     }
 
     /**
-     * @param {*} command - The command you want to set a cooldown for
-     * @param {import('discord.js').Message} message - The guild ID the command is executed in
+     * @param {import('./slashCommand')|import('./command')} command - The command you want to set a cooldown for
+     * @param {import('discord.js').Message|import('discord.js').CommandInteraction} message - The guild ID the command is executed in
      * @return {Promise<number>}
      */
     async getCooldown (command, message) {
@@ -257,6 +271,7 @@ class Utils {
         let cd = command.cooldown;
         if (guildInfo.prefab.commandCooldowns && guildInfo.prefab.commandCooldowns[command.name]) {
             let roles = Object.keys(guildInfo.prefab.commandCooldowns[command.name]);
+            //@ts-ignore
             let highestRole = message.member.roles.cache.filter(role => roles.includes(role.id)).sort((a, b) =>  b.position - a.position).first();
             if (highestRole) cd = guildInfo.prefab.commandCooldowns[command.name][highestRole.id] / 1000;
         }

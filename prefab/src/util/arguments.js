@@ -6,8 +6,8 @@ const ms = require('ms');
  * Function to check if the user has passed in the proper arguments when using a command
  * @param {import('discord.js').Message} message - The message to check the arguments for
  * @param {string[]} msgArgs - The arguments given by the user
- * @param {*} expectedArgs - The expected arguments for the command
- * @returns {*} Returns the arguments mapped by their ID's if all the arguments were as expected, else, returns `undefined/false`
+ * @param {Arguments} expectedArgs - The expected arguments for the command
+ * @returns {Flags} Returns the arguments mapped by their ID's if all the arguments were as expected, else, returns `undefined/false`
  */
 function processArguments(message, msgArgs, expectedArgs) {
     let counter = 0;
@@ -157,3 +157,102 @@ function processArguments(message, msgArgs, expectedArgs) {
 }
 
 module.exports = processArguments;
+
+/**
+ * @typedef Arguments
+ * @type {Array.<SomethingArgument|NumberArgument|ChannelArgument|RoleArgument|AuthorOrMemberArgument|MemberArgument|AttachmentArgument|TimeArgument>}
+ */
+
+ /**
+  * @typedef Flags
+  * @type {Object.<string, *>}
+  */
+
+/**
+ * @typedef SomethingArgument
+ * @type {object}
+ * @property {'SOMETHING'} type - The user argument can be anything, maybe a word or a URL - anything
+ * @property {string} id - The ID of this argument
+ * @property {boolean} [optional] - Whether this argument is optional
+ * @property {number} [amount] - The amount of arguments
+ * @property {string} [prompt] - The message to send if the user doesn't provide the correct arguments
+ * @property {string[]} [words] - An array of words that the user can send
+ * @property {RegExp} [regexp] - The user argument should match this regular expression
+ */
+
+/**
+ * @typedef NumberArgument
+ * @type {object}
+ * @property {'NUMBER'} type - The user argument has to be a number and will automatically be converted into a number
+ * @property {string} id - The ID of this argument
+ * @property {boolean} [optional] - Whether this argument is optional
+ * @property {number} [amount] - The amount of arguments
+ * @property {string} [prompt] - The message to send if the user doesn't provide the correct arguments
+ * @property {number} [min] - The minimum that the number can be
+ * @property {number} [max] - The maximum that the number can be
+ * @property {boolean} [toInteger] - Whether the number should be converted into an integer
+ */
+
+/**
+ * @typedef ChannelArgument
+ * @type {object}
+ * @property {'CHANNEL'} type - The user argument has to be a channel and will automatically be converted into a channel
+ * @property {string} id - The ID of this argument
+ * @property {boolean} [optional] - Whether this argument is optional
+ * @property {number} [amount] - The amount of arguments
+ * @property {string} [prompt] - The message to send if the user doesn't provide the correct arguments
+ * @property {("GUILD_TEXT"|"DM"|"GUILD_VOICE"|"GROUP_DM"|"GUILD_CATEGORY"|"GUILD_NEWS"|"GUILD_STORE"|"GUILD_NEWS_THREAD"|"GUILD_PUBLIC_THREAD"|"GUILD_PRIVATE_THREAD"|"GUILD_STAGE_VOICE")[]} [channelTypes] - The channel types that the provided channel can be
+ */
+
+/**
+ * @typedef RoleArgument
+ * @type {object}
+ * @property {'ROLE'} type - The user argument has to be a role and will automatically be converted into a role
+ * @property {string} id - The ID of this argument
+ * @property {boolean} [optional] - Whether this argument is optional
+ * @property {number} [amount] - The amount of arguments
+ * @property {string} [prompt] - The message to send if the user doesn't provide the correct arguments
+ * @property {boolean} [notBot] - The role shouldn't be the default role of a bot
+ */
+
+/**
+ * @typedef AuthorOrMemberArgument
+ * @type {object}
+ * @property {'AUTHOR_OR_MEMBER'} type - If the user mentions someone, it will get the mentioned member, otherwise it will be the message member
+ * @property {string} id - The ID of this argument
+ * @property {boolean} [toUser] - Whether or not the member should be converted into the User object
+ */
+
+/**
+ * @typedef MemberArgument
+ * @type {object}
+ * @property {'MEMBER'} type - The user argument has to be a member and will automatically be converted into a member
+ * @property {string} id - The ID of this argument
+ * @property {boolean} [optional] - Whether this argument is optional
+ * @property {number} [amount] - The amount of arguments
+ * @property {string} [prompt] - The message to send if the user doesn't provide the correct arguments
+ * @property {boolean} [notBot] - The member shouldn't be a bot
+ * @property {boolean} [notSelf] - The member shouldn't be the command user
+ * @property {boolean} [toUser] - Whether or not the member should be converted into the User object
+ */
+
+/**
+ * @typedef AttachmentArgument
+ * @type {object}
+ * @property {'ATTACHMENT'} type - The message has to have an attachment
+ * @property {string} id - The ID of this argument
+ * @property {boolean} [optional] - Whether this argument is optional
+ * @property {string} [prompt] - The message to send if the user doesn't provide the correct arguments
+ * @property {string[]} attachmentTypes - The accepted attachment types
+ */
+
+/**
+ * @typedef TimeArgument
+ * @type {object}
+ * @property {'TIME'} type - The user argument has to be time and will automatically be converted into milliseconds
+ * @property {string} id - The ID of this argument
+ * @property {boolean} [optional] - Whether this argument is optional
+ * @property {string} [prompt] - The message to send if the user doesn't provide the correct arguments
+ * @property {number} [min] - The minimum time they should provide in milliseconds
+ * @property {number} [max] - The maximum time they can provide in milliseconds
+ */

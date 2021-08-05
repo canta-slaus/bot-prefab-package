@@ -9,6 +9,10 @@
   "keywords": [],
   "author": "https://github.com/canta-slaus",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canta-slaus/bot-prefab-package"
+  },
   "dependencies": {
     "discord.js": "git+https://github.com/discordjs/discord.js.git",
     "fs-extra": "^10.0.0",

@@ -26,20 +26,24 @@ const getDefaultChannel = (guild) => {
     return guild.channels.cache
         .filter(c => c.type === "GUILD_TEXT" && !c.isThread &&
                      c.permissionsFor(guild.client.user).has("SEND_MESSAGES"))
+        //@ts-ignore
         .sort((a, b) => a.position - b.position)
         .first();
 }
 
 /**
- * guildCreate event
  * @param {import('../../util/client')} client 
  * @param {import('discord.js').Guild} guild 
  */
 module.exports = async (client, guild) => {
-    if (guild.available) {
-        const channel = getDefaultChannel(guild);
-        if (!channel) return;
-
-        channel.send(`Thanks for adding me! My prefix is \`${client.config.PREFIX}\`\nFor a list of commands, type \`${client.config.PREFIX}help\``);
+    try {
+        if (guild.available) {
+            const channel = getDefaultChannel(guild);
+            if (!channel) return;
+    
+            await channel.send(`Thanks for adding me! My prefix is \`${client.config.PREFIX}\`\nFor a list of commands, type \`${client.config.PREFIX}help\``);
+        }
+    } catch (e) {
+        client.utils.log("ERROR", "src/events/guild/guildCreate.js", e.message);
     }
 }

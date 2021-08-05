@@ -12,7 +12,8 @@ module.exports = class PrefixCommand extends Command {
             args: [
                 {
                     type: 'SOMETHING',
-                    prompt: 'Please enter a new prefix to use!'
+                    prompt: 'Please enter a new prefix to use!',
+                    id: 'prefix'
                 }
             ],
             clientPerms: ['SEND_MESSAGES']
@@ -24,6 +25,7 @@ module.exports = class PrefixCommand extends Command {
      * @param {import('../../util/client')} p.client
      * @param {import('discord.js').Message} p.message
      * @param {string[]} p.args 
+     * @param {Object.<string, *>} p.flags
      */
     async execute ({ client, message, args }) {
         if (!prefixRegExp.test(args[0])) return message.channel.send(`${message.author.username}, that prefix doesn't follow the rules. Please try again.`);

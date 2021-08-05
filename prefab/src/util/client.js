@@ -9,7 +9,11 @@ class PrefabClient extends Client {
     constructor() {
         super({ intents: Object.values(Intents.FLAGS) });
 
+        /** @type {Collection<string, import('./command')>} */
         this.commands = new Collection();
+        /** @type {Collection<string, import('./slashCommand')>} */
+        this.slashCommands = new Collection();
+        /** @type {Collection<string, string[]>} */
         this.categories = new Collection();
         /** @type {import('../types/manager').Manager<string, import('../types/guild').GuildInfo>} */
         this.guildInfo = new Manager(this, require('../schemas/guild'));
@@ -26,12 +30,23 @@ class PrefabClient extends Client {
 
     async loadCommands () {
         await registerCommands(this, '../commands');
-        return this;
+
+        let commands = await this.application.commands.fetch();
+        if (this.config.TEST_SERVERS[0]) commands = commands.concat(await (await this.guilds.fetch(this.config.TEST_SERVERS[0])).commands.fetch());
+        const deleted = commands.filter(c => !this.slashCommands.has(c.name));
+
+        if (!deleted.size) return;
+
+        for (const command of deleted.values()) {
+            if (command.guildId) {
+                const guild = await this.guilds.fetch(command.guildId);
+                await guild.commands.delete(command);
+            } else await this.application.commands.delete(command);
+        }
     }
 
     async loadEvents () {
         await registerEvents(this, '../events');
-        return this;
     }
 
     /**
@@ -39,14 +54,6 @@ class PrefabClient extends Client {
      * @returns 
      */
     async login (token) {
-        this.utils.log("WARNING", "src/util/client.js", "Loading commands...");
-        await this.loadCommands();
-        this.utils.log("SUCCESS", "src/util/client.js", "Loaded all commands!");
-
-        this.utils.log("WARNING", "src/util/client.js", "Loading events...");
-        await this.loadEvents();
-        this.utils.log("SUCCESS", "src/util/client.js", "Loaded all events!");
-
         try {
             this.utils.log("WARNING", "src/util/client.js", "Connecting to the database...");
             await connect(this.config.MONGODB_URI, {
@@ -67,6 +74,14 @@ class PrefabClient extends Client {
         } catch (e) {
             this.utils.log("ERROR", "src/util/client.js", `Error logging in: ${e.message}`);
         }
+
+        this.utils.log("WARNING", "src/util/client.js", "Loading commands...");
+        await this.loadCommands();
+        this.utils.log("SUCCESS", "src/util/client.js", "Loaded all commands!");
+
+        this.utils.log("WARNING", "src/util/client.js", "Loading events...");
+        await this.loadEvents();
+        this.utils.log("SUCCESS", "src/util/client.js", "Loaded all events!");
 
         return this.token;
     }

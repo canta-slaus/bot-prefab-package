@@ -14,8 +14,9 @@ module.exports = class Template extends Command {
      * @param {import('../util/client')} p.client
      * @param {import('discord.js').Message} p.message
      * @param {string[]} p.args 
+     * @param {Object.<string, *>} p.flags
      */
-    async execute ({ client, message, args }) {
+    async execute ({ client, message, args, flags }) {
         // 
     }
 }
