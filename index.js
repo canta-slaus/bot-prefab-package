@@ -59,7 +59,7 @@ const dir = process.cwd();
 
             console.log("Installing packages...");
             await exec("npm init -y", { cwd: `./${response.name}` });
-            await exec("npm i https://github.com/discordjs/discord.js mongoose ms", { cwd: `./${response.name}` });
+            await exec("npm i discord.js@dev mongoose ms", { cwd: `./${response.name}` });
 
             console.log("Done!");
         } else if (response.action === "update") {
