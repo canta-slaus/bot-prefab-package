@@ -1,6 +1,6 @@
 {
   "name": "bot-prefab-package",
-  "version": "1.1.2",
+  "version": "2.0.0",
   "description": "A CLI tool for the bot-prefab.",
   "main": "index.js",
   "bin": {
