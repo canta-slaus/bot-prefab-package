@@ -40,7 +40,7 @@ Simply chose which event you would like to add and it will create the file in th
 
 ### Add types (WIP)
 To make the most out of the `Manager` class, I recommend defining the key and document type it is storing. For that, you can use either [`JSDoc`](https://jsdoc.app/) as seen in some of the files of the prefab (e.g. `prefab/slashCommand.js`) or make use of `d.ts` files (e.g. `src/types/profile.d.ts`). However, not everyone might know how to use either of those but making use of this is very helpful and makes working with the `Manager` class a lot more pleasant. When you choose this, it will prompt you to specify which schema (actually the model file) you would like to generate the type for.\
-_Disclaimer: The resulting type might not be 100% accurate or might be missing some elements, if you find any missing/wrong type declarations, feel free to open a new [`issue`] (https://github.com/canta-slaus/bot-prefab-package/issues) or join the Discord server!_
+_Disclaimer: The resulting type might not be 100% accurate or might be missing some elements, if you find any missing/wrong type declarations, feel free to open a new [`issue`](https://github.com/canta-slaus/bot-prefab-package/issues) or join the Discord server!_
 
 ## Why use this?
 The package offers a feature-rich template to make prototyping bots easier and **faster**! It offers a command handler (including slash commands) and event handler. In the future, there will be more options to chose from when creating/updating your project.
