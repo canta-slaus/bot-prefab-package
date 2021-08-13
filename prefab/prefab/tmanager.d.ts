@@ -1,4 +1,4 @@
-import { FilterQuery, UpdateQuery, QueryOptions } from "mongoose";
+import { FilterQuery, UpdateQuery, QueryOptions, Query } from "mongoose";
 import { Collection } from "discord.js";
 
 declare class Manager <K, V> {

@@ -44,7 +44,7 @@ module.exports = class CommandsCommand extends Command {
                 case 'disable':
                     if (disabledCommands.includes(command.name)) return message.channel.send(`The command \`${command.name}\` is already disabled.`);
 
-                    await client.guildInfo.findByIdAndUpdate(message.guild.id, { $push: { "prefabdisabledCommands": command.name } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+                    await client.guildInfo.findByIdAndUpdate(message.guild.id, { $push: { "prefab.disabledCommands": command.name } }, { new: true, upsert: true, setDefaultsOnInsert: true });
 
                     message.channel.send(`The command \`${command.name}\` has been disabled.`);
                     break;

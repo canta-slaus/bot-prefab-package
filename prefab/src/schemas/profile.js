@@ -1,19 +1,11 @@
 //@ts-check
 
 const { Schema, model } = require('mongoose');
+const { prefabProfile } = require('../../prefab/schemas');
 
 const user = new Schema({
     _id: String,
-    prefab: {
-        language: {
-            default: 'english',
-            type: String
-        },
-        embedColor: {
-            default: 'default',
-            type: String
-        }
-    },
+    prefab: prefabProfile,
 
     // You can add your own things after this 
 });

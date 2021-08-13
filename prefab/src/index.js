@@ -1,8 +1,9 @@
 //@ts-check
 
-const PrefabClient = require('./util/client');
+const { Intents } = require('discord.js');
+const Client = require('./util/client');
 
-const client = new PrefabClient();
+const client = new Client({ intents: Object.values(Intents.FLAGS) });
 
 (async () => {
     client.login(client.config.TOKEN);

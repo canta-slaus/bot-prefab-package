@@ -2,11 +2,11 @@
 
 const fs = require('fs').promises;
 const path = require('path');
-const Command = require('./command');
-const SlashCommand = require('./slashCommand');
+const Command = require('../src/util/command');
+const SlashCommand = require('../src/util/slashCommand');
 
 /**
- * @param {import('./client')} client 
+ * @param {import('../src/util/client')} client 
  * @param  {...string} dirs 
  */
 async function registerCommands(client, ...dirs) {
@@ -16,7 +16,7 @@ async function registerCommands(client, ...dirs) {
         for(let file of files) {
             let stat = await fs.lstat(path.join(__dirname, dir, file));
 
-            // if (file.includes("-ignore")) continue;
+            if (file.includes("-ignore")) continue;
 
             if(stat.isDirectory()) // If file is a directory, recursive call recurDir
                 registerCommands(client, path.join(dir, file));
@@ -68,16 +68,6 @@ async function registerCommands(client, ...dirs) {
                                 client.categories.set('no category', commands);
                             }
                         } else {
-                            if (!client.application?.owner) await client.application?.fetch();
-
-                            let options;
-
-                            if (cmdModule.options && cmdModule.options.length) options = cmdModule.options;
-                            else if (cmdModule.groups && Object.keys(cmdModule.groups)) options = getSubcommandGroupOptions(cmdModule.groups);
-                            else if (cmdModule.subcommands && Object.keys(cmdModule.subcommands)) options = getSubcommandOptions(cmdModule.subcommands);
-
-                            const data = { name: cmdModule.name, description: cmdModule.description, options, defaultPermission: cmdModule.defaultPermission };
-                            let command;
                             if (cmdModule.development) {
                                 const server = client.config.TEST_SERVERS[0];
 
@@ -85,17 +75,9 @@ async function registerCommands(client, ...dirs) {
                                     client.utils.log("WARNING", "src/registry.js", "To add a development only slash command, you need to have at least one test server.");
                                     continue;
                                 }
-
-                                const guild = await client.guilds.fetch(server);
-                                command = await guild.commands.create(data);
-                            } else {
-                                command = await client.application.commands.create(data);
                             }
 
-                            if (cmdModule.devOnly && client.config.DEVS.length) await command.permissions.set({ permissions: client.config.DEVS.map(id => { return { id, type: "USER", permission: true } }) });
-                            else if (cmdModule.permissions && cmdModule.permissions.length) await command.permissions.set({ permissions: cmdModule.permissions });
-
-                            client.slashCommands.set(data.name, cmdModule);
+                            client.slashCommands.set(cmdModule.name, cmdModule);
                         }
                     } catch (e) {
                         client.utils.log("ERROR", "src/registry.js", `Error loading commands: ${e.message}`);
@@ -107,7 +89,7 @@ async function registerCommands(client, ...dirs) {
 }
 
 /**
- * @param {import('./client')} client 
+ * @param {import('../src/util/client')} client 
  * @param {...string} dirs
  */
 async function registerEvents(client, ...dirs) {
@@ -137,48 +119,4 @@ async function registerEvents(client, ...dirs) {
 module.exports = {
     registerEvents, 
     registerCommands 
-};
-
-/**
- * @param {Object.<string, import('./slashCommand').SubcommandGroup>} groups 
- */
-function getSubcommandGroupOptions (groups) {
-    const names = Object.keys(groups);
-    const options = [];
-
-    for (const name of names) {
-        /** @type {import('discord.js').ApplicationCommandOptionData} */
-        const option = {
-            name,
-            description: groups[name].description,
-            options: getSubcommandOptions(groups[name].subcommands),
-            type: "SUB_COMMAND_GROUP"
-        }
-
-        options.push(option);
-    }
-
-    return options;
-}
-
-/**
- * @param {Object.<string, import('./slashCommand').Subcommand>} subcommands 
- */
-function getSubcommandOptions (subcommands) {
-    const names = Object.keys(subcommands);
-    const options = [];
-
-    for (const name of names) {
-        /** @type {import('discord.js').ApplicationCommandOptionData} */
-        const option = {
-            name,
-            description: subcommands[name].description,
-            options: subcommands[name].args,
-            type: "SUB_COMMAND"
-        }
-
-        options.push(option);
-    }
-
-    return options;
 }
