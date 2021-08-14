@@ -20,8 +20,13 @@ class PrefabClient extends Client {
         this.guildInfo = new Manager(this, require('../src/schemas/guild'));
         /** @type {import('./tmanager').Manager<string, import('../src/types/profile').ProfileInfo>} */
         this.profileInfo = new Manager(this, require('../src/schemas/profile'));
+        /** @type {import('../config/config.json')} */
         this.config = require('../config/config.json');
-        this.settings = require('../config/settings.json');
+        /** @type {import('../config/colors.json')} */
+        this.colors = require('../config/colors.json');
+        /** @type {import('../config/languages.json')} */
+        this.languages = require('../config/languages.json');
+        /** @type {import('../src/util/utils')} */
         this.utils = new (require('../src/util/utils'))(this);
         /** @type {import('discord.js').Collection<string, Collection<string, Collection<string, number>>>} */
         this.serverCooldowns = new Collection();
@@ -34,8 +39,8 @@ class PrefabClient extends Client {
 
         await registerCommands(this, '../src/commands');
 
-        const guildCommands = toApplicationCommand(this.slashCommands.filter(s => s.development));
-        const globalCommands = toApplicationCommand(this.slashCommands.filter(s => !s.development));
+        const guildCommands = toApplicationCommand(this.slashCommands.filter(s => s.development), this);
+        const globalCommands = toApplicationCommand(this.slashCommands.filter(s => !s.development), this);
 
         if (guildCommands.length) {
             const guild = await this.guilds.fetch(this.config.TEST_SERVERS[0]);
@@ -100,8 +105,9 @@ module.exports = PrefabClient;
 
 /**
  * @param {Collection<string, import('../src/util/slashCommand')>} collection 
+ * @param {PrefabClient} client 
  * @returns {import('discord.js').ApplicationCommandData[]} 
  */
-function toApplicationCommand (collection) {
-    return collection.map(s => { return { name: s.name, description: s.description, options: s.options, defaultPermission: s.devOnly ? false : s.defaultPermission, permissions: s.devOnly ? this.config.DEVS.map(id => { return { id, type: "USER", permission: true } }) : s.permissions } });
+function toApplicationCommand (collection, client) {
+    return collection.map(s => { return { name: s.name, description: s.description, options: s.options, defaultPermission: s.devOnly ? false : s.defaultPermission, permissions: s.devOnly ? client.config.DEVS.map(id => { return { id, type: "USER", permission: true } }) : s.permissions } });
 }
