@@ -19,7 +19,7 @@ async function registerCommands(client, ...dirs) {
             if (file.includes("-ignore")) continue;
 
             if(stat.isDirectory()) // If file is a directory, recursive call recurDir
-                registerCommands(client, path.join(dir, file));
+                await registerCommands(client, path.join(dir, file));
             else {
                 // Check if file is a .js file.
                 if(file.endsWith(".js")) {
