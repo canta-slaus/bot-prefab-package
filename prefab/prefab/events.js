@@ -149,6 +149,10 @@ async function interactionCreate (client, interaction) {
     }
 }
 
+/**
+ * @param {import('../src/util/client')} client 
+ * @param {import('discord.js').Message} message  
+ */
 async function messageCreate (client, message) {
     try {
         if (message.author.bot || message.channel.type !== 'GUILD_TEXT' || message.webhookId) return;
