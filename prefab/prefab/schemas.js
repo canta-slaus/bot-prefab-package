@@ -7,8 +7,8 @@ const prefabGuild = {
         default: PREFIX,
         type: String
     },
-    disabledCommands: Array,
-    disabledChannels: Array,
+    disabledCommands: [String],
+    disabledChannels: [String],
     commandPerms: {},
     commandCooldowns: {},
     commandAlias: {}
