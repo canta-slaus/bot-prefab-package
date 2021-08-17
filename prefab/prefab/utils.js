@@ -172,57 +172,6 @@ class PrefabUtils {
     }
 
     /**
-     * Function to convert milliseconds into readable time
-     * @param {number} ms - The time in 
-     * @return {string} Readable time as a string
-     */
-    msToTime(ms) {
-        let time = "";
-
-        let n = 0;
-        if (ms >= 31536000000) {
-            n = Math.floor(ms / 31536000000);
-            time = `${n}y `;
-            ms -= n * 31536000000;
-        }
-
-        if (ms >= 2592000000) {
-            n = Math.floor(ms / 2592000000);
-            time += `${n}mo `;
-            ms -= n * 2592000000;
-        }
-
-        if (ms >= 604800000) {
-            n = Math.floor(ms / 604800000);
-            time += `${n}w `;
-            ms -= n * 604800000;
-        }
-
-        if (ms >= 86400000) {
-            n = Math.floor(ms / 86400000);
-            time += `${n}d `;
-            ms -= n * 86400000;
-        }
-
-        if (ms >= 3600000) {
-            n = Math.floor(ms / 3600000);
-            time += `${n}h `;
-            ms -= n * 3600000;
-        }
-
-        if (ms >= 60000) {
-            n = Math.floor(ms / 60000);
-            time += `${n}m `;
-            ms -= n * 60000;
-        }
-
-        n = Math.ceil(ms / 1000);
-        time += n === 0 ? '' : `${n}s`;
-
-        return time.trimEnd();
-    }
-
-    /**
      * Function to get all missing permissions of a GuildMember
      * @param {import('discord.js').GuildMember} member - The guild member whose missing permissions you want to get
      * @param {import('discord.js').PermissionString[]} perms - The permissions you want to check for
@@ -267,17 +216,222 @@ class PrefabUtils {
      * @return {Promise<number>}
      */
     async getCooldown (command, message) {
-        const guildInfo = await this.client.guildInfo.get(message.guild.id);
         let cd = command.cooldown;
-        if (guildInfo.prefab.commandCooldowns && guildInfo.prefab.commandCooldowns[command.name]) {
-            let roles = Object.keys(guildInfo.prefab.commandCooldowns[command.name]);
-            //@ts-ignore
-            let highestRole = message.member.roles.cache.filter(role => roles.includes(role.id)).sort((a, b) =>  b.position - a.position).first();
-            if (highestRole) cd = guildInfo.prefab.commandCooldowns[command.name][highestRole.id] / 1000;
+
+        if (message.guildId) {
+            const guildInfo = await this.client.guildInfo.get(message.guildId);
+            if (guildInfo.prefab.commandCooldowns && guildInfo.prefab.commandCooldowns[command.name]) {
+                let roles = Object.keys(guildInfo.prefab.commandCooldowns[command.name]);
+                //@ts-ignore
+                let highestRole = message.member.roles.cache.filter(role => roles.includes(role.id)).sort((a, b) =>  b.position - a.position).first();
+                if (highestRole) cd = guildInfo.prefab.commandCooldowns[command.name][highestRole.id] / 1000;
+            }
         }
 
         return cd;
     }
+
+    /**
+     * Takes human time input and outputs time in ms (eg: 5m30s -> 330000 | 3d5h2m -> 277320000).
+     * @param {string} timeStr - Time input (eg: 1m20s, 1s, 3h20m).
+     * @returns {number} - Returns the human time input converted to milliseconds.
+     * @example let time = timeToMs('10s') -> 10000
+     */
+    timeToMs(timeStr) {
+        let values = getUnitAndNumber(timeStr);
+        if (!values) return undefined;
+
+        let ms = 0;
+        try {
+            for (let i = 0; i < values.length; ++i) ms += getMs(values[i].numberPart, values[i].unit);
+        } catch (e) {
+            return undefined;
+        };
+
+        return ms;
+    }
+
+    /**
+     * Takes ms time input and outputs time in human time (eg: 3780000 -> 1h3m | 1hr3mins | 1 hour 3 minutes).
+     * @param {number} time - Time input as ms (eg: 3780000).
+     * @param {object} [options] - Optional parameters.
+     * @param {('long'|'medium'|'short')} [options.format] - Format to use (short -> 1m3s | medium -> 1min3secs | long -> 1minute3seconds).
+     * @param {boolean} [options.spaces] - Whether to use spaces (true or false).
+     * @param {number} [options.unitRounding] - Amount of numbers to output (eg: 1 = 3780000 -> 1h).
+     * @param {string} [options.joinString] - Specified string to join each unit (eg: ' , ').
+     * @returns {string} - Returns a beautified converted string from milliseconds.
+     * @example let time = timeToMs(3780000, { format: 'medium', spaces: true, options.spaces: 2, joinstring: ', ' }); -> '1 hr, 3 mins'
+     */
+    msToTime(time, options = {}) {
+        if (
+            options.format === undefined ||
+            (options.format !== 'short' && options.format !== 'medium' && options.format !== 'long')
+        ) options.format = 'short';
+
+        if (options.spaces === undefined) options.spaces = false;
+        if (options.joinString === undefined) options.joinString = ' ';
+
+        let timeStr = '';
+        let nr = 0;
+
+        for (let i = Object.keys(timeUnitValues).length; i >= 0; --i) {
+            let key = Object.keys(timeUnitValues)[i];
+            if (key === 'a') continue;
+
+            let ctime = time / timeUnitValues[key];
+            if (ctime >= 1) {
+                if ((options.unitRounding ?? 100) < ++nr) break;
+
+                ctime = Math.floor(ctime);
+                timeStr += ctime;
+                timeStr += options.spaces === true && options.format !== 'short' ? ' ' : '';
+                timeStr += fullTimeUnitNames[key][options.format] + (ctime !== 1 && options.format !== 'short' ? 's' : '');
+                    timeStr += options.spaces === true ? options.joinString : '';
+                time -= ctime * timeUnitValues[key];
+            };
+        }
+
+        while (timeStr.endsWith(options.joinString)) timeStr = timeStr.slice(0, -1 * options.joinString.length);
+
+        if (timeStr === '') return undefined;
+        else return timeStr;
+    }
 }
 
 module.exports = PrefabUtils;
+
+const timeUnits = {
+    ms: ['ms', 'millisecond(s)'],
+    s: ['sec(s)', 'second(s)'],
+    min: ['minute(s)', 'm', 'min(s)'],
+    h: ['hr(s)', 'hour(s)'],
+    d: ['day(s)'],
+    w: ['wk(s)', 'week(s)'],
+    mth: ['mth(s)', 'month(s)'],
+    y: ['year(s)'],
+    a: ['julianyear(s)'],
+    dec: ['decade(s)'],
+    cen: ['cent(s)', 'century', 'centuries']
+}
+
+const timeUnitValues = {
+    ms: 1,
+    s: 1000,
+    min: 1000 * 60,
+    h: 1000 * 60 * 60,
+    d: 1000 * 60 * 60 * 24,
+    w: 1000 * 60 * 60 * 24 * 7,
+    mth: 1000 * 60 * 60 * 24 * 30,
+    y: 1000 * 60 * 60 * 24 * 365,
+    a: 1000 * 60 * 60 * 24 * 365.25,
+    dec: 1000 * 60 * 60 * 24 * 365 * 10,
+    cen: 1000 * 60 * 60 * 24 * 365 * 100
+}
+
+const fullTimeUnitNames = {
+    ms: { short: 'ms', medium: 'msec', long: 'millisecond' },
+    s: { short: 's', medium: 'sec', long: 'second' },
+    min: { short: 'm', medium: 'min', long: 'minute' },
+    h: { short: 'h', medium: 'hr', long: 'hour' },
+    d: { short: 'd', medium: 'day', long: 'day' },
+    w: { short: 'wk', medium: 'wk', long: 'week' },
+    mth: { short: 'mth', medium: 'mo', long: 'month' },
+    y: { short: 'y', medium: 'yr', long: 'year' },
+    dec: { short: 'dec', medium: 'dec', long: 'decade' },
+    cen: { short: 'cen', medium: 'cent', long: 'century' },
+}
+
+/**
+ * Function to return the string(s) and numbers (n) of a string formatted as: 'nnssnnssnnss'.
+ * /[0-9.,:]/g = regex for getting all the chars in a string which are equal to 0-9.,:
+ * /[^0-9.,:]/g = regex for getting all the chars in a string which are not equal to 0-9.,:
+ * @param {string} timeString
+ */
+function getUnitAndNumber(timeString) {
+    timeString = timeString.toLowerCase().replace(/ /g, '');
+
+    let unit = timeString.replace(/[0-9.,:]/g, ' ');
+    let numberPart = timeString
+        .replace(/[^0-9.,:]/g, ' ')
+        .replace(',', '.');
+
+    let units = unit.split(' ').filter((str) => str !== '');
+    let numberParts = numberPart
+        .split(' ')
+        .filter((str) => str !== '');
+
+    units = getExactUnits(units);
+
+    if (
+        unit === '' ||
+        unit === undefined ||
+        numberPart === '' ||
+        numberPart === undefined ||
+        units === undefined ||
+        units.length === 0 ||
+        numberParts.length === 0 ||
+        units.length !== numberParts.length
+    ) return undefined;
+
+    let ans = [];
+    for (let i = 0; i < units.length; ++i)
+        ans.push({
+            numberPart: numberParts[i],
+            unit: units[i],
+        });
+    return ans;
+}
+
+/**
+ * @param {string[]} thisUnits
+ */
+function getExactUnits(thisUnits) {
+    let exactUnits = [];
+
+    for (let newUnit of thisUnits) {
+        if (timeUnits[newUnit] !== undefined) {
+            exactUnits.push(newUnit);
+            continue;
+        } else {
+            for (let timeUnit in timeUnits) {
+                for (let timeUnitAllias of timeUnits[timeUnit]) {
+                    if (timeUnitAllias.replace('(s)', '') === newUnit
+                     || timeUnitAllias.replace('(s)', 's') === newUnit) {
+                        exactUnits.push(timeUnit);
+                        continue;
+                    }
+                }
+            }
+        }
+    }
+
+    if (exactUnits.length !== thisUnits.length) return undefined;
+
+    return exactUnits;
+}
+
+/**
+ * Checking for special case scenario.
+ * @param {string} number
+ * @param {string} unit
+ */
+function getMs(number, unit) {
+    if (number.includes(':')) {
+        switch (unit) {
+            case 'min':
+                return (
+                    Number(number.split(':')[0]) * timeUnitValues['min'] +
+                    Number(number.split(':')[1]) * timeUnitValues['s']
+                );
+            case 'h':
+                return (
+                    Number(number.split(':')[0]) * timeUnitValues['h'] +
+                    Number(number.split(':')[1]) * timeUnitValues['min']
+                );
+            default:
+                throw new Error('Used \':\' with a unit which doesn\'t support it');
+        }
+    }
+
+    return Number(number) * timeUnitValues[unit];
+}
