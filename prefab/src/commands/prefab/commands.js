@@ -1,62 +1,107 @@
 //@ts-check
 
-const Command = require('../../util/command');
+const SlashCommand = require('../../util/slashCommand');
 
-module.exports = class CommandsCommand extends Command {
+module.exports = class Commands extends SlashCommand {
     constructor (client) {
         super(client, {
             name: "commands",
+            description: "Disable/enable commands.",
             category: "Utility",
             canNotDisable: true,
+            ignoreDisabledChannels: true,
             ownerOnly: true,
-            clientPerms: ['SEND_MESSAGES', 'EMBED_LINKS']
-        });
-    }
+            clientPerms: ['SEND_MESSAGES', 'EMBED_LINKS'],
+            cooldown: 5,
+            subcommands: {
+                list: {
+                    description: "List all disabled commands",
+                    execute: async ({ client, interaction }) => {
+                        await this.setCooldown(interaction);
 
-    /**
-     * @param {object} p
-     * @param {import('../../util/client')} p.client
-     * @param {import('discord.js').Message} p.message
-     * @param {string[]} p.args 
-     */
-    async execute ({ client, message, args }) {
-        const guildInfo = await client.guildInfo.get(message.guild.id);
-        const disabledCommands = guildInfo.prefab.disabledCommands;
+                        const guildInfo = await client.guildInfo.get(interaction.guildId);
 
-        if (!args[0]) {
-            const embed = (await client.utils.CustomEmbed({ userID: message.author.id }))
-                .setTimestamp()
-                .setTitle('Disabled Commands')
-                .setDescription(disabledCommands.length === 0 ? 'There are no disabled commands in this server!' : '\`' + disabledCommands.join('\`, \`') + '\`');
+                        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+                            .setTimestamp();
 
-            message.channel.send({ embeds: [embed] });
-        } else {
-            if (!args[1]) return message.channel.send('Please specify a command.');
+                        if (!guildInfo?.prefab?.disabledCommands?.length) {
+                            embed.setDescription(`${interaction.user}, there are currently no disabled commands in this server.`);
+                        } else {
+                            embed.setDescription(`${interaction.user}, these are the disabled commands:\n\`${guildInfo.prefab.disabledCommands.join('\`, \`')}\``);
+                        }
 
-            const command = client.commands.get(args[1].toLowerCase());
-            if (!command) return message.channel.send(`The command \`${args[1]}\` does not exist.`);
+                        await interaction.reply({ embeds: [embed] });
+                    }
+                },
+                disable: {
+                    description: "Disable a command",
+                    args: [
+                        {
+                            name: "command",
+                            description: "The command you want to disable",
+                            type: "STRING",
+                            required: true
+                        }
+                    ],
+                    execute: async ({ client, interaction }) => {
+                        await this.setCooldown(interaction);
 
-            if (command.canNotDisable) return message.channel.send(`The command \`${command.name}\` can not be disabled/enabled.`);
+                        const guildInfo = await client.guildInfo.get(interaction.guildId);
 
-            await this.setCooldown(message);
+                        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+                            .setTimestamp();
+                        
+                        const name = interaction.options.getString("command").toLowerCase();
 
-            switch (args[0]) {
-                case 'disable':
-                    if (disabledCommands.includes(command.name)) return message.channel.send(`The command \`${command.name}\` is already disabled.`);
+                        const command = client.slashCommands.get(name);
 
-                    await client.guildInfo.findByIdAndUpdate(message.guild.id, { $push: { "prefab.disabledCommands": command.name } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+                        if (!command) embed.setDescription(`${interaction.user}, the command \`${name}\` does not exist.`);
+                        else if (command.canNotDisable) embed.setDescription(`${interaction.user}, the command \`${command.name}\` can not be disabled.`);
+                        else if (guildInfo?.prefab?.disabledCommands?.includes(command.name)) embed.setDescription(`${interaction.user}, the command \`${command.name}\` is already disabled.`);
+                        else {
+                            await client.guildInfo.findByIdAndUpdate(interaction.guildId, { $push: { "prefab.disabledCommands": command.name } }, { new: true, upsert: true, setDefaultsOnInsert: true });
 
-                    message.channel.send(`The command \`${command.name}\` has been disabled.`);
-                    break;
+                            embed.setDescription(`${interaction.user}, the command \`${command.name}\` has been disabled.`);
+                        }
 
-                case 'enable':
-                    if (!disabledCommands.includes(command.name)) return message.channel.send(`The command \`${command.name}\` is already enabled.`);
+                        await interaction.reply({ embeds: [embed] });
+                    }
+                },
+                enable: {
+                    description: "Enable a command",
+                    args: [
+                        {
+                            name: "command",
+                            description: "The command you want to enable",
+                            type: "STRING",
+                            required: true
+                        }
+                    ],
+                    execute: async ({ client, interaction }) => {
+                        await this.setCooldown(interaction);
 
-                    await client.guildInfo.findByIdAndUpdate(message.guild.id, { $pull: { "prefab.disabledCommands": command.name } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+                        const guildInfo = await client.guildInfo.get(interaction.guildId);
 
-                    message.channel.send(`The command \`${command.name}\` has been enabled.`);
-                    break;
+                        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+                            .setTimestamp();
+                        
+                        const name = interaction.options.getString("command").toLowerCase();
+
+                        const command = client.slashCommands.get(name);
+
+                        if (!command) embed.setDescription(`${interaction.user}, the command \`${name}\` does not exist.`);
+                        else if (command.canNotDisable) embed.setDescription(`${interaction.user}, the command \`${command.name}\` can not be enabled.`);
+                        else if (!guildInfo?.prefab?.disabledCommands?.includes(command.name)) embed.setDescription(`${interaction.user}, the command \`${command.name}\` is already enabled.`);
+                        else {
+                            await client.guildInfo.findByIdAndUpdate(interaction.guildId, { $pull: { "prefab.disabledCommands": command.name } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+
+                            embed.setDescription(`${interaction.user}, the command \`${command.name}\` has been enabled.`);
+                        }
+
+                        await interaction.reply({ embeds: [embed] });
+                    }
+                }
             }
-        }
+        });
     }
 }

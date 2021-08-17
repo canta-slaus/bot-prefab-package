@@ -1,68 +1,98 @@
 //@ts-check
 
-const Command = require('../../util/command');
+const SlashCommand = require('../../util/slashCommand');
 
-module.exports = class ChannelsCommand extends Command {
+module.exports = class Channels extends SlashCommand {
     constructor (client) {
         super(client, {
             name: "channels",
             category: "Utility",
+            description: "Check all the channels that will the bot will ignore and disable/enable them.",
+            cooldown: 5,
             canNotDisable: true,
             ignoreDisabledChannels: true,
             ownerOnly: true,
-            clientPerms: ['SEND_MESSAGES', 'EMBED_LINKS']
+            clientPerms: ['SEND_MESSAGES', 'EMBED_LINKS'],
+            subcommands: {
+                list: {
+                    description: "Lists all disabled channels",
+                    execute: async ({ client, interaction }) => {
+                        await this.setCooldown(interaction);
+
+                        const guildInfo = await client.guildInfo.get(interaction.guildId);
+
+                        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+                            .setTimestamp();
+
+                        if (!guildInfo?.prefab?.disabledChannels?.length) embed.setDescription(`${interaction.user}, there are no disabled channels in this server!`)
+                        else embed.setDescription(`These channels are currently disabled:\n${guildInfo.prefab.disabledChannels.map(id => `<#${id}>`).join(" ")}`);
+
+                        await interaction.reply({ embeds: [embed] });
+                    }
+                },
+                disable: {
+                    description: "Disable a channel",
+                    args: [
+                        {
+                            name: "channel",
+                            description: "The channel you want to disable",
+                            type: "CHANNEL",
+                            required: true
+                        }
+                    ],
+                    execute: async ({ client, interaction }) => {
+                        await this.setCooldown(interaction);
+
+                        const guildInfo = await client.guildInfo.get(interaction.guildId);
+
+                        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+                            .setTimestamp();
+
+                        const channel = interaction.options.getChannel("channel");
+
+                        if (channel.type !== 'GUILD_TEXT') embed.setDescription(`${interaction.user}, you can only disable text channels.`);
+                        else if (guildInfo?.prefab?.disabledChannels?.includes(channel.id)) embed.setDescription(`${interaction.user}, the channel ${channel} is already disabled.`);
+                        else {
+                            await client.guildInfo.findByIdAndUpdate(interaction.guildId, { $push: { "prefab.disabledChannels": channel.id } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+    
+                            embed.setDescription(`${interaction.user}, the channel ${channel} has been disabled.`);
+                        }
+
+                        await interaction.reply({ embeds: [embed] });
+                    }
+                },
+                enable: {
+                    description: "Enable a channel",
+                    args: [
+                        {
+                            name: "channel",
+                            description: "The channel you want to enable",
+                            type: "CHANNEL",
+                            required: true
+                        }
+                    ],
+                    execute: async ({ client, interaction }) => {
+                        await this.setCooldown(interaction);
+
+                        const guildInfo = await client.guildInfo.get(interaction.guildId);
+
+                        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+                            .setTimestamp();
+
+                        const channel = interaction.options.getChannel("channel");
+
+                        if (channel.type !== 'GUILD_TEXT') embed.setDescription(`${interaction.user}, you can only enable text channels.`);
+                        else if (!guildInfo?.prefab?.disabledChannels?.includes(channel.id)) embed.setDescription(`${interaction.user}, the channel ${channel} is already enabled.`);
+                        else {
+                            await client.guildInfo.findByIdAndUpdate(interaction.guildId, { $pull: { "prefab.disabledChannels": channel.id } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+
+                            embed.setDescription(`${interaction.user}, the channel ${channel} has been enabled.`)
+                        }
+
+                        await interaction.reply({ embeds: [embed] });
+                    }
+                }
+            }
         });
-    }
-
-    /**
-     * @param {object} p
-     * @param {import('../../util/client')} p.client
-     * @param {import('discord.js').Message} p.message
-     * @param {string[]} p.args 
-     */
-    async execute ({ client, message, args }) {
-        const guildInfo = await client.guildInfo.get(message.guild.id);
-        const disabledChannels = guildInfo.prefab.disabledChannels;
-
-        const channelEmbed = (await client.utils.CustomEmbed({ userID: message.author.id }))
-            .setTimestamp();
-
-        if (!args[0]) {
-            channelEmbed
-                .setTitle('Disabled Channels')
-                .setDescription(disabledChannels.length === 0 ? 'There are no disabled channels in this server!' : '<#' + disabledChannels.join('>, <#') + '>');
-
-            return message.channel.send({ embeds: [channelEmbed] });
-        }
-
-        if (!args[1]) return message.channel.send({ embeds: [channelEmbed.setDescription('**Please specify a channel to disable.**')] });
-
-        const channel = message.mentions.channels.first() || message.guild.channels.cache.get(args[1]);
-        if (!channel) return message.channel.send({ embeds: [channelEmbed.setDescription(`**The channel ${args[1]} does not exist.**`)] });
-        if (channel.type !== 'GUILD_TEXT') return message.channel.send({ embeds: [channelEmbed.setDescription(`**You can only disable text channels.**`)] });
-
-        await this.setCooldown(message);
-
-        switch (args[0]) {
-            case 'disable':
-                if (disabledChannels.includes(channel.id)) return message.channel.send({ embeds: [channelEmbed.setDescription(`**The channel ${channel} is already disabled.**`)] });
-
-                await client.guildInfo.findByIdAndUpdate(message.guild.id, { $push: { "prefab.disabledChannels": channel.id } }, { new: true, upsert: true, setDefaultsOnInsert: true });
-
-                message.channel.send({ embeds: [channelEmbed.setDescription(`**The channel ${channel} has been disabled.**`)] });
-                break;
-
-            case 'enable':
-                if (!disabledChannels.includes(channel.id)) return message.channel.send({ embeds: [channelEmbed.setDescription(`**The channel ${channel} is already enabled.**`)] });
-
-                await client.guildInfo.findByIdAndUpdate(message.guild.id, { $pull: { "prefab.disabledChannels": channel.id } }, { new: true, upsert: true, setDefaultsOnInsert: true });
-
-                message.channel.send({ embeds: [channelEmbed.setDescription(`**The channel ${channel} has been enabled.**`)] });
-                break;
-
-            default:
-                message.channel.send({ embeds: [channelEmbed.setDescription(`${message.author}, please check the usage of the command.`)] });
-                break;
-        }
     }
 }

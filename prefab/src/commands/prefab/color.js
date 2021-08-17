@@ -1,38 +1,50 @@
 //@ts-check
 
-const colors = require('../../../config/colors.json');
-const cls = Object.keys(colors);
+const SlashCommand = require('../../util/slashCommand');
 
-const Command = require('../../util/command');
-
-module.exports = class ColorCommand extends Command {
+module.exports = class Color extends SlashCommand {
     constructor (client) {
         super(client, {
             name: "color",
+            description: "Set your own embed color",
             category: "Utility",
-            clientPerms: ['SEND_MESSAGES'],
+            clientPerms: ['SEND_MESSAGES', 'EMBED_LINKS'],
+            cooldown: 5,
+            options: [
+                {
+                    name: "color",
+                    description: "The new color you want",
+                    type: "STRING"
+                }
+            ]
         });
     }
 
     /**
      * @param {object} p
      * @param {import('../../util/client')} p.client
-     * @param {import('discord.js').Message} p.message
-     * @param {string[]} p.args 
+     * @param {import('discord.js').CommandInteraction} p.interaction
      */
-    async execute ({ client, message, args }) {
-        await this.setCooldown(message);
-    
-        const userInfo = await client.profileInfo.get(message.author.id);
+    async execute ({ client, interaction }) {
+        await this.setCooldown(interaction);
 
-        if (!args[0]) {
-            message.channel.send(`${message.author.tag}, your current embed color is \`${userInfo.prefab.embedColor}\`.\nThese are the available colors:\n\`${cls.join('`, `')}\``);
+        const userInfo = await client.profileInfo.get(interaction.user.id);
+
+        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+            .setTimestamp();
+
+        const color = interaction.options.getString("color")?.toLowerCase();
+
+        if (!color) {
+            embed.setDescription(`${interaction.user}, your current embed color is \`${userInfo.prefab.embedColor}\`\n\nThese are the available colors: \`${Object.keys(client.colors).join('`, `')}\``)
         } else {
-            args[0] = args[0].toLowerCase();
-            if (!cls.includes(args[0])) return message.channel.send(`${message.author.tag}, the embed color \`${args[0]}\` doesn't exist.`);
-
-            message.channel.send(`${message.author.tag}, your embed color has been changed to \`${args[0]}\``);
-            await client.profileInfo.findByIdAndUpdate(message.author.id, { $set: { "prefab.embedColor": args[0] } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+            if (!Object.keys(client.colors).includes(color)) embed.setDescription(`${interaction.user}, the embed color \`${color}\` doesn't exist.`);
+            else {
+                embed.setDescription(`${interaction.user}, your embed color has been changed to \`${color}\``)
+                await client.profileInfo.findByIdAndUpdate(interaction.user.id, { $set: { "prefab.embedColor": color } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+            }
         }
+
+        await interaction.reply({ embeds: [embed] });
     }
 }

@@ -1,38 +1,51 @@
 //@ts-check
 
-const Command = require('../../util/command');
+const SlashCommand = require('../../util/slashCommand');
 
-const languages = require('../../../config/languages.json');
-const langs = Object.keys(languages);
-
-module.exports = class LanguageCommand extends Command {
+module.exports = class Language extends SlashCommand {
     constructor (client) {
         super(client, {
             name: "language",
+            description: "Set the language you want to get help on commands with.",
             category: "Utility",
-            clientPerms: ['SEND_MESSAGES']
+            clientPerms: ['SEND_MESSAGES', 'EMBED_LINKS'],
+            options: [
+                {
+                    name: "language",
+                    description: "The language you want",
+                    type: "STRING",
+                    required: true
+                }
+            ]
         });
     }
 
     /**
      * @param {object} p
      * @param {import('../../util/client')} p.client
-     * @param {import('discord.js').Message} p.message
-     * @param {string[]} p.args 
+     * @param {import('discord.js').CommandInteraction} p.interaction 
      */
-    async execute ({ client, message, args }) {
-        await this.setCooldown(message);
+    async execute ({ client, interaction }) {
+        await this.setCooldown(interaction);
 
-        const userInfo = await client.profileInfo.get(message.author.id);
+        const userInfo = await client.profileInfo.get(interaction.user.id);
 
-        if (!args[0]) {
-            message.channel.send(`${message.author.tag}, your current set language is \`${userInfo.prefab.language}\`.\nThese are the supported languages:\n\`${langs.join('`, `')}\``);
+        const language = interaction.options.getString("language")?.toLowerCase();
+
+        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+            .setTimestamp();
+
+        if (!language) {
+            embed.setDescription(`${interaction.user}, your current set language is \`${userInfo.prefab.language}\`.\n\nThese are the supported languages: \`${Object.keys(client.languages).join('`, `')}\``);
         } else {
-            args[0] = args[0].toLowerCase();
-            if (!langs.includes(args[0])) return message.channel.send(`${message.author.tag}, the language \`${args[0]}\` doesn't exist.`);
+            if (!Object.keys(client.languages).includes(language)) embed.setDescription(`${interaction.user}, the language \`${language}\` doesn't exist.`);
+            else {
+                embed.setDescription(`${interaction.user}, your language has been changed to \`${language}\``);
 
-            message.channel.send(`${message.author.tag}, your language has been changed to \`${args[0]}\``);
-            await client.profileInfo.findByIdAndUpdate(message.author.id, { $set: { "prefab.language": args[0] } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+                await client.profileInfo.findByIdAndUpdate(interaction.user.id, { $set: { "prefab.language": language } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+            }
         }
+
+        await interaction.reply({ embeds: [embed] });
     }
 }

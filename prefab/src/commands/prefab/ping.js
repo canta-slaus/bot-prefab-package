@@ -1,26 +1,30 @@
 //@ts-check
 
-const Command = require('../../util/command');
+const SlashCommand = require('../../util/slashCommand');
 
-module.exports = class PingCommand extends Command {
+module.exports = class Ping extends SlashCommand {
     constructor (client) {
         super(client, {
             name: "ping",
+            description: "Get the bots current ping",
             category: "Misc",
-            aliases: ["pong"],
-            clientPerms: ['SEND_MESSAGES']
+            clientPerms: ['SEND_MESSAGES', 'EMBED_LINKS'],
+            cooldown: 5
         });
     }
 
     /**
      * @param {object} p
      * @param {import('../../util/client')} p.client
-     * @param {import('discord.js').Message} p.message
-     * @param {string[]} p.args 
+     * @param {import('discord.js').CommandInteraction} p.interaction
      */
-    async execute ({ client, message, args }) {
-        await this.setCooldown(message);
-        const msg = await message.channel.send("Ping?");
-        await msg.edit(`Pong! Latency is ${msg.createdTimestamp - message.createdTimestamp}ms.`);
+    async execute ({ client, interaction }) {
+        await this.setCooldown(interaction);
+
+        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+            .setDescription(`Pong! Latency is ${Date.now() - interaction.createdTimestamp}ms.`)
+            .setTimestamp();
+
+        await interaction.reply({ embeds: [embed] });
     }
 }

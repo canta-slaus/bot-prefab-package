@@ -1,62 +1,74 @@
 //@ts-check
 
-const Command = require('../../util/command');
+const SlashCommand = require('../../util/slashCommand');
 const { inspect } = require('util');
 const { MessageAttachment } = require('discord.js');
 
-module.exports = class Template extends Command {
+module.exports = class Eval extends SlashCommand {
     constructor (client) {
         super(client, {
             name: "eval",
-            hideCommand: true,
-            devOnly: true
+            description: "Dev-only command",
+            category: "Utility",
+            clientPerms: ['SEND_MESSAGES'],
+            devOnly: true,
+            options: [
+                {
+                    name: "code",
+                    description: "Code to evaluate",
+                    type: "STRING",
+                    required: true
+                }
+            ],
+            hideCommand: true
         });
     }
 
     /**
      * @param {object} p
      * @param {import('../../util/client')} p.client
-     * @param {import('discord.js').Message} p.message
-     * @param {string[]} p.args 
+     * @param {import('discord.js').CommandInteraction} p.interaction 
      */
-    async execute ({ client, message, args }) {
-        /**
-         * @param {string} text 
-         */
-        function clean (text) {
-            if (typeof text === 'string') {
-                text = text
-                    .replace(/`/g, `\`${String.fromCharCode(8203)}`)
-                    .replace(/@/g, `@${String.fromCharCode(8203)}`)
-                    .replace(new RegExp(client.config.TOKEN, 'gi'), '****')
-                    .replace(new RegExp(client.config.MONGODB_URI, 'gi'), '****');
-            }
-            return text;
-        }
-
-        let code = args.join(' ');
+    async execute ({ client, interaction }) {
+        let code = interaction.options.getString("code");
         code = code.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
         let evaled;
+
         try {
             const start = process.hrtime();
             evaled = eval(`(async () => { ${code} })();`);
+
             if (evaled instanceof Promise) {
                 evaled = await evaled;
             }
+
             const stop = process.hrtime(start);
-            const response = [
-                `**Output:** \`\`\`js\n${clean(inspect(evaled, { depth: 0 }))}\n\`\`\``,
-                `**Time Taken:** \`\`\`${(((stop[0] * 1e9) + stop[1])) / 1e6}ms\`\`\``
-            ];
-            const res = response.join('\n');
+            const res = `**Output:** \`\`\`js\n${clean(client, inspect(evaled, { depth: 0 }))}\n\`\`\`\n**Time Taken:** \`\`\`${(((stop[0] * 1e9) + stop[1])) / 1e6}ms\`\`\``
+
             if (res.length < 2000) {
-                await message.channel.send(res);
+                await interaction.reply({ content: res, ephemeral: true });
             } else {
                 const output = new MessageAttachment(Buffer.from(res), 'output.txt');
-                await message.channel.send({ files: [output] });
+                await interaction.reply({ files: [output], ephemeral: true });
             }
-        } catch (err) {
-            return message.channel.send(`Error: \`\`\`xl\n${clean(err)}\n\`\`\``);
+        } catch (e) {
+            await interaction.reply({ content: `Error: \`\`\`xl\n${clean(client, e)}\n\`\`\``, ephemeral: true });
         }
     }
+}
+
+/**
+ * @param {import('../../util/client')} client 
+ * @param {string} text 
+ */
+function clean (client, text) {
+    if (typeof text === 'string') {
+        text = text
+            .replace(/`/g, `\`${String.fromCharCode(8203)}`)
+            .replace(/@/g, `@${String.fromCharCode(8203)}`)
+            .replace(new RegExp(client.config.TOKEN, 'gi'), '****')
+            .replace(new RegExp(client.config.MONGODB_URI, 'gi'), '****');
+    }
+
+    return text;
 }

@@ -1,100 +1,138 @@
 //@ts-check
 
-const Command = require('../../util/command');
-const ms = require('ms');
+const SlashCommand = require('../../util/slashCommand');
 
-module.exports = class CooldownsCommand extends Command {
+module.exports = class Cooldowns extends SlashCommand {
     constructor (client) {
         super(client, {
             name: "cooldowns",
+            description: "Check the all the custom cooldowns of a command and add new cooldowns",
             category: "Utility",
             ownerOnly: true,
-            args: [
-                {
-                    type: 'SOMETHING',
-                    prompt: 'Please specify a command.',
-                    id: 'command'
+            clientPerms: ['SEND_MESSAGES', 'EMBED_LINKS'],
+            cooldown: 5,
+            subcommands: {
+                list: {
+                    description: "List all cooldowns on a command",
+                    args: [
+                        {
+                            name: "command",
+                            description: "The command to check",
+                            type: "STRING",
+                            required: true
+                        }
+                    ],
+                    execute: async ({ client, interaction }) => {
+                        await this.setCooldown(interaction);
+
+                        const guildInfo = await client.guildInfo.get(interaction.guildId);
+
+                        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+                            .setTimestamp();
+
+                        const name = interaction.options.getString("command").toLowerCase();
+                        const command = client.slashCommands.get(name);
+
+                        if (!command) embed.setDescription(`${interaction.user}, there is no command \`${name}\`.`);
+                        else if (command.canNotSetCooldown) embed.setDescription(`${interaction.user}, you can not set a cooldown for this command.`);
+                        else if (!guildInfo?.prefab?.commandCooldowns || !guildInfo?.prefab?.commandCooldowns[command.name]) embed.setDescription(`${interaction.user}, there are no modified cooldowns on this command.`);
+                        else {
+                            let desc = "";
+
+                            for (const [role, cooldown] of Object.entries(guildInfo.prefab.commandCooldowns[command.name])) {
+                                desc += `<@&${role}> \`${client.utils.msToTime(cooldown)}\`\n`;
+                            }
+
+                            embed.setDescription(`${interaction.user}, here are the cooldowns for the command \`${name}\`:\n` + desc);
+                        }
+
+                        await interaction.reply({ embeds: [embed] });
+                    }
+                },
+                set: {
+                    description: "Set a cooldown for a certain role",
+                    args: [
+                        {
+                            name: "command",
+                            description: "The command to add the cooldown to",
+                            type: "STRING",
+                            required: true
+                        },
+                        {
+                            name: "role",
+                            description: "The role this cooldown should apply to",
+                            type: "ROLE",
+                            required: true
+                        },
+                        {
+                            name: "cooldown",
+                            description: "The cooldown (in seconds)",
+                            type: "NUMBER",
+                            required: true
+                        }
+                    ],
+                    execute: async ({ client, interaction }) => {
+                        await this.setCooldown(interaction);
+
+                        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+                            .setTimestamp();
+
+                        const name = interaction.options.getString("command").toLowerCase();
+                        const role = interaction.options.getRole("role").id;
+                        const time = interaction.options.getNumber("cooldown");
+
+                        const command = client.slashCommands.get(name);
+
+                        if (!command) embed.setDescription(`${interaction.user}, there is no command \`${name}\`.`);
+                        else if (command.canNotSetCooldown) embed.setDescription(`${interaction.user}, you can not set a cooldown for this command.`);
+                        else if (time > 86400000) embed.setDescription(`${interaction.user}, the cooldown can't be longer than 24h.`);
+                        else if ((command.cooldown ?? 0) === time) embed.setDescription(`${interaction.user}, that's already the default cooldown for this command.`);
+                        else {
+                            if (time === 0) {
+                                await client.guildInfo.findByIdAndUpdate(interaction.guildId, { $unset: { [`prefab.commandCooldowns.${command.name}.${role}`]: 1 } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+
+                                embed.setDescription(`${interaction.user}, the cooldown on the command ${command.name} for the role <@&${role}> has been removed.`);
+                            } else {
+                                await client.guildInfo.findByIdAndUpdate(interaction.guildId, { $set: { [`prefab.commandCooldowns.${command.name}.${role}`]: time * 1000 } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+
+                                embed.setDescription(`${interaction.user}, the cooldown on the command ${command.name} for the role <@&${role}> has been set to \`${client.utils.msToTime(time * 1000)}\`.`);
+                            }
+                        }
+
+                        await interaction.reply({ embeds: [embed] });
+                    }
+                },
+                clear: {
+                    description: "Clear all cooldowns for a command",
+                    args: [
+                        {
+                            name: "command",
+                            description: "The command to clear",
+                            type: "STRING",
+                            required: true
+                        }
+                    ],
+                    execute: async ({ client, interaction }) => {
+                        await this.setCooldown(interaction);
+
+                        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+                            .setTimestamp();
+
+                        const name = interaction.options.getString("command").toLowerCase();
+                        const command = client.slashCommands.get(name);
+
+                        if (!command) embed.setDescription(`${interaction.user}, there is no command \`${name}\`.`);
+                        else if (command.canNotSetCooldown) embed.setDescription(`${interaction.user}, you can not set a cooldown for this command.`);
+                        else {
+                            await client.guildInfo.findByIdAndUpdate(interaction.guildId, { $unset: { [`prefab.commandCooldowns.${command.name}`]: 1 } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+
+                            embed.setDescription(`${interaction.user}, the cooldown on the command ${command.name} has been set to the default (\`${command.cooldown ? client.utils.msToTime(command.cooldown) : 'No cooldown'}\`).`);
+                        }
+
+                        await interaction.reply({ embeds: [embed] });
+                    }
                 }
-            ],
-            clientPerms: ['SEND_MESSAGES', 'EMBED_LINKS']
-        });
-    }
-
-    /**
-     * @param {object} p
-     * @param {import('../../util/client')} p.client
-     * @param {import('discord.js').Message} p.message
-     * @param {string[]} p.args 
-     * @param {Object.<string, *>} p.flags
-     */
-    async execute ({ client, message, args, flags }) {
-        const command = client.commands.get(flags.command.toLowerCase());
-        if (!command) return message.channel.send(`${message.author.username}, that command doesn't exist.`);
-        if (command.canNotSetCooldown) return message.channel.send(`${message.author.username}, you can not set a cooldown for this command.`);
-
-        const guildInfo = await client.guildInfo.get(message.guild.id);
-        const commandCooldowns = guildInfo.prefab.commandCooldowns || {};
-
-        const embed = (await client.utils.CustomEmbed({ userID: message.author.id }))
-            .setTimestamp();
-
-        if (!args[1]) {
-            await this.setCooldown(message);
-            if (!commandCooldowns || !commandCooldowns[command.name]) embed.setDescription('There are no modified cooldowns on this command.');
-            else {
-                let desc = "";
-                for (const [role, cooldown] of Object.entries(commandCooldowns[command.name])) {
-                    desc += `<@&${role}> ${client.utils.msToTime(cooldown)}\n`;
-                }
-
-                embed.setDescription(desc);
             }
-
-            return message.channel.send({ embeds: [embed] });
-        }
-
-        if (!args[2]) return message.channel.send(`${message.author.username}, please specify a role.`);
-
-        let roleID = args[2].replace('<@&', '').replace('>', '');
-        let role = message.guild.roles.cache.get(roleID);
-        if (!role) return message.channel.send(`${message.author.username}, please specify a role.`);
-
-        const update = { "prefab.commandCooldowns": { } };
-        update["prefab.commandCooldowns"][command.name] = { };
-
-        await this.setCooldown(message);
-
-        switch (args[1].toLowerCase()) {
-            case 'clear':
-                if (commandCooldowns[command.name] && commandCooldowns[command.name][roleID]) {
-                    delete commandCooldowns[command.name][roleID];
-                    if (Object.keys(commandCooldowns[command.name]).length === 0) delete commandCooldowns[command.name];
-                    update["prefab.commandCooldowns"] = commandCooldowns;
-                }
-
-                embed.setDescription(`The cooldown for the role <@&${roleID}> has been reset to the default (\`${command.cooldown ? client.utils.msToTime(command.cooldown) : 'No cooldown'}\`).`);
-                break;
-
-            case 'set':
-                if (!args[3]) return message.channel.send(`${message.author.username}, please specify a cooldown.`);
-
-                let time = ms(args.slice(3).join(''));
-                if (time > 86400000) return message.channel.send(`${message.author.username}, the cooldown can't be longer than 24h.`);
-                if ((command.cooldown ? command.cooldown : 0) === time / 1000) return message.channel.send(`${message.author.username}, that's already the default cooldown for this command.`);
-                if (!commandCooldowns[command.name]) commandCooldowns[command.name] = { };
-                commandCooldowns[command.name][roleID] = time;
-
-                update["prefab.commandCooldowns"] = commandCooldowns;
-                
-                embed.setDescription(`The cooldown for the role <@&${roleID}> has been set to \`${client.utils.msToTime(time)}\`.`);
-                break;
-
-            default:
-                embed.setDescription(`${message.author.username}, please check the usage of this command.`);
-                return message.channel.send({ embeds: [embed] });
-        }
-
-        await client.guildInfo.findByIdAndUpdate(message.guild.id, { $set: update }, { new: true, upsert: true, setDefaultsOnInsert: true });
-        message.channel.send({ embeds: [embed] });
+        });
     }
 }

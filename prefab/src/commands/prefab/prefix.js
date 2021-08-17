@@ -1,41 +1,51 @@
 //@ts-check
 
-const Command = require('../../util/command');
+const SlashCommand = require('../../util/slashCommand');
 const prefixRegExp = /^[a-zA-Z0-9!@#\$%\^\&*\)\(+=._-]{1,15}$/;
 
-module.exports = class PrefixCommand extends Command {
+module.exports = class Prefix extends SlashCommand {
     constructor (client) {
         super(client, {
             name: "prefix",
+            description: "Set a new prefix for your server",
             category: "Utility",
-            ownerOnly: true,
-            args: [
+            // ownerOnly: true,
+            clientPerms: ['SEND_MESSAGES', 'EMBED_LINKS'],
+            options: [
                 {
-                    type: 'SOMETHING',
-                    prompt: 'Please enter a new prefix to use!',
-                    id: 'prefix'
+                    name: "prefix",
+                    description: "The new prefix",
+                    type: "STRING",
+                    required: true
                 }
             ],
-            clientPerms: ['SEND_MESSAGES']
+            cooldown: 5
         });
     }
 
     /**
      * @param {object} p
      * @param {import('../../util/client')} p.client
-     * @param {import('discord.js').Message} p.message
-     * @param {string[]} p.args 
-     * @param {Object.<string, *>} p.flags
+     * @param {import('discord.js').CommandInteraction} p.interaction
      */
-    async execute ({ client, message, args }) {
-        if (!prefixRegExp.test(args[0])) return message.channel.send(`${message.author.username}, that prefix doesn't follow the rules. Please try again.`);
+    async execute ({ client, interaction }) {
+        await this.setCooldown(interaction);
 
-        let guildInfo = await client.guildInfo.get(message.guild.id);
-        if (guildInfo.prefab.prefix === args[0]) return message.channel.send(`${message.author.username}, please make sure to enter a new prefix.`);
+        const guildInfo = await client.guildInfo.get(interaction.guildId);
 
-        await this.setCooldown(message);
-        await client.guildInfo.findByIdAndUpdate(message.guild.id, { $set: { "prefab.prefix": args[0] } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+            .setTimestamp();
 
-        message.channel.send(`${message.author.username}, the new prefix is: \`${args[0]}\``);
+        const prefix = interaction.options.getString("prefix");
+
+        if (!prefixRegExp.test(prefix)) embed.setDescription(`${interaction.user}, that prefix doesn't follow the rules. Please try again.`);
+        else if (guildInfo.prefab.prefix === prefix) embed.setDescription(`${interaction.user}, please make sure to enter a new prefix.`);
+        else {
+            await client.guildInfo.findByIdAndUpdate(interaction.guildId, { $set: { "prefab.prefix": prefix } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+    
+            embed.setDescription(`${interaction.user}, the new prefix is: \`${prefix}\``);
+        }
+
+        await interaction.reply({ embeds: [embed] });
     }
 }
