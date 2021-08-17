@@ -10,35 +10,45 @@ class PrefabSlashCommand {
     constructor (client, {
         name = "",
         description = "",
+        category = "No category",
         options = [],
         defaultPermission = true,
         permissions = null,
         development = true,
         devOnly = false,
+        hideCommand = false,
         ownerOnly = false,
+        guildOnly = true,
         perms = [],
         clientPerms = [],
         nsfw = false,
         cooldown = 0,
         globalCooldown = true,
         ignoreDisabledChannels = false,
+        canNotDisable = false,
+        canNotSetCooldown = true,
         groups = null,
         subcommands = null
     }) {
         this.client = client;
         this.name = name;
         this.description = description;
+        this.category = category;
         this.options = options;
         this.defaultPermission = defaultPermission;
         this.permissions = permissions;
         this.development = development;
         this.devOnly = devOnly;
+        this.hideCommand = hideCommand;
         this.ownerOnly = ownerOnly;
+        this.guildOnly = guildOnly;
         this.perms = perms;
         this.clientPerms = clientPerms;
         this.nsfw = nsfw;
         this.cooldown = cooldown;
         this.globalCooldown = globalCooldown;
+        this.canNotDisable = canNotDisable;
+        this.canNotSetCooldown = canNotSetCooldown;
         this.ignoreDisabledChannels = ignoreDisabledChannels;
         this.groups = groups;
         this.subcommands = subcommands;
@@ -128,17 +138,22 @@ function getSubcommandOptions (subcommands) {
  * @type {object}
  * @property {string} name - The name of the slash command
  * @property {string} description - The description of the slash command
+ * @property {string} [category] - The category of this command
  * @property {import('discord.js').ApplicationCommandOptionData[]} [options] - The options for this slash command
  * @property {boolean} [defaultPermission] - If false, this slash command will be disabled for everyone
  * @property {import('discord.js').ApplicationCommandPermissionData[]} [permissions] - Data to give/take the permissions for a user/role to use this command
  * @property {boolean} [development] - Whether this is a global command or a guild only command (first ID of config.TEST_SERVERS)
  * @property {boolean} [devOnly] - Whether this command can only be used by a bot dev
+ * @property {boolean} [hideCommand] - Whether or not this command will be displayed in the help command
  * @property {boolean} [ownerOnly] - Whether this command can only be used by the server owner
+ * @property {boolean} [guildOnly] - Whether this command can only be used in a server
  * @property {import('discord.js').PermissionString[]} [perms] - Permissions that the user needs in order to use this command
  * @property {import('discord.js').PermissionString[]} [clientPerms] - Permissions that the client needs to run this command
  * @property {boolean} [nsfw] - Whether or not this command can only be used in a NSFW channel
  * @property {number} [cooldown] - Cooldown of the command
  * @property {boolean} [globalCooldown] - Whether the cooldown on this command will be applied globally or for a server only
+ * @property {boolean} [canNotDisable] - Whether or not this command can be disabled in a server
+ * @property {boolean} [canNotSetCooldown] - Whether or not users can set a custom command cooldown for this command
  * @property {boolean} [ignoreDisabledChannels] - Whether or not this command will still run in ignored channels
  * @property {Object.<string, SubcommandGroup>} [groups] - Subcommand groups for this command
  * @property {Object.<string, Subcommand>} [subcommands] - Subcommands for this command
