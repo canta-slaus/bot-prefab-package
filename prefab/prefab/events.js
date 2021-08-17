@@ -47,7 +47,7 @@ const escapeRegex = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     try {
         await interaction.reply({ embeds: [embed], ephemeral: true });
     } catch (e) {
-        //
+        console.log(e);
     }
 }
 
@@ -64,7 +64,8 @@ async function guildCreate (client, guild) {
             await channel.send(`Thanks for adding me! My prefix is \`${client.config.PREFIX}\`\nFor a list of commands, type \`${client.config.PREFIX}help\``);
         }
     } catch (e) {
-        client.utils.log("ERROR", "src/events/guild/guildCreate.js", e.message);
+        client.utils.log("ERROR", "src/events/guild/guildCreate.js", "");
+        console.log(e);
     }
 }
 
@@ -75,28 +76,31 @@ async function guildCreate (client, guild) {
 async function interactionCreate (client, interaction) {
     try {
         if (interaction.isCommand()) {
-            if (!interaction.inGuild()) return;
-
             const command = client.slashCommands.get(interaction.commandName);
+
             if (!command) return;
 
-            if (command.ownerOnly && interaction.guild.ownerId !== interaction.user.id) return await quickReply(client, interaction, "This command can only be used by the server owner.");
+            if (command.guildOnly) {
+                if (!interaction.inGuild()) return;
 
-            const guildInfo = await client.guildInfo.get(interaction.guildId);
+                if (command.ownerOnly && interaction.guild.ownerId !== interaction.user.id) return await quickReply(client, interaction, "This command can only be used by the server owner.");
 
-            if (guildInfo.prefab.disabledCommands.includes(command.name)) return await quickReply(client, interaction, "This command is currently disabled in this server.");
-            if (guildInfo.prefab.disabledChannels.includes(interaction.channelId) && !command.ignoreDisabledChannels) return await quickReply(client, interaction, "You can't use any commands in this channel.");
+                const guildInfo = await client.guildInfo.get(interaction.guildId);
 
-            //@ts-ignore
-            if (command.clientPerms && !interaction.channel.permissionsFor(interaction.guild.me).has(command.clientPerms, true)) return await quickReply(client, interaction, `I am missing the following permissions: ${client.utils.missingPermissions(interaction.guild.me, command.clientPerms)}.`);
+                if (guildInfo.prefab.disabledCommands.includes(command.name)) return await quickReply(client, interaction, "This command is currently disabled in this server.");
+                if (guildInfo.prefab.disabledChannels.includes(interaction.channelId) && !command.ignoreDisabledChannels) return await quickReply(client, interaction, "You can't use any commands in this channel.");
 
-            //@ts-ignore
-            if (guildInfo.prefab.commandPerms && guildInfo.prefab.commandPerms[command.name] && !interaction.member.permissions.has(guildInfo.prefab.commandPerms[command.name], true))  return await quickReply(client, interaction, `You are missing the following permissions: ${client.utils.missingPermissions(interaction.member, guildInfo.prefab.commandPerms[command.name])}.`);
-            //@ts-ignore
-            else if (command.perms && !interaction.member.permissions.has(command.perms, true)) return await quickReply(client, interaction, `You are missing the following permissions: ${client.utils.missingPermissions(interaction.member, command.perms)}.`);
+                //@ts-ignore
+                if (command.clientPerms && !interaction.channel.permissionsFor(interaction.guild.me).has(command.clientPerms, true)) return await quickReply(client, interaction, `I am missing the following permissions: ${client.utils.missingPermissions(interaction.guild.me, command.clientPerms)}.`);
 
-            //@ts-ignore
-            if (command.nsfw && !interaction.channel.nsfw) return await quickReply(client, interaction, `This command may only be used in an NSFW channel.`);
+                //@ts-ignore
+                if (guildInfo.prefab.commandPerms && guildInfo.prefab.commandPerms[command.name] && !interaction.member.permissions.has(guildInfo.prefab.commandPerms[command.name], true))  return await quickReply(client, interaction, `You are missing the following permissions: ${client.utils.missingPermissions(interaction.member, guildInfo.prefab.commandPerms[command.name])}.`);
+                //@ts-ignore
+                else if (command.perms && !interaction.member.permissions.has(command.perms, true)) return await quickReply(client, interaction, `You are missing the following permissions: ${client.utils.missingPermissions(interaction.member, command.perms)}.`);
+
+                //@ts-ignore
+                if (command.nsfw && !interaction.channel.nsfw) return await quickReply(client, interaction, `This command may only be used in an NSFW channel.`);
+            }
 
             const cd = await client.utils.getCooldown(command, interaction);
 
@@ -116,36 +120,31 @@ async function interactionCreate (client, interaction) {
                 const cooldownAmount = cd * 1000;
                 if (timestamps.has(interaction.user.id)) {
                     const expirationTime = timestamps.get(interaction.user.id) + cooldownAmount;
-                    if (now < expirationTime) return await quickReply(client, interaction, `Please wait \`${client.utils.msToTime(expirationTime - now)}\` before using this command again.`)
+                    if (now < expirationTime) return await quickReply(client, interaction, `Please wait \`${client.utils.msToTime(expirationTime - now)}\` before using this command again.`);
                 }
             }
 
             const group = interaction.options.getSubcommandGroup(false);
             const subcommand = interaction.options.getSubcommand(false);
 
-            let data;
-
-            if (group) data = interaction.options.data.find(o => o.name === group).options.find(s => s.name === subcommand).options;
-            else if (subcommand) data = interaction.options.data.find(s => s.name === subcommand).options;
-            else data = interaction.options.data;
-
-            const args = {  };
-            for (const arg of data) {
-                args[arg.name] = interaction.options.get(arg.name);
+            try {
+                if (command.groups || command.subcommands) {
+                    const sub = command.groups ? command.groups[group].subcommands[subcommand]
+                                                      : command.subcommands[subcommand];
+    
+                    if (sub.execute) return await sub.execute({ client, interaction, group, subcommand });
+                }
+    
+                //@ts-ignore
+                await command.execute({ client, interaction, group, subcommand });
+            } catch (e) {
+                client.utils.log("ERROR", "src/events/interaction/interactionCreate.js", `Error running command '${command.name}'`);
+                console.log(e);
             }
-
-            if (command.groups || command.subcommands) {
-                const sub = command.groups ? command.groups[group].subcommands[subcommand]
-                                                  : command.subcommands[subcommand];
-
-                if (sub.execute) return await sub.execute({ client, interaction, group, subcommand });
-            }
-
-            //@ts-ignore
-            await command.execute({ client, interaction, group, subcommand });
         }
     } catch (e) {
-        client.utils.log("ERROR", "src/events/interaction/interactionCreate.js", e.message);
+        client.utils.log("ERROR", "src/events/interaction/interactionCreate.js", "");
+        console.log(e);
     }
 }
 
@@ -219,7 +218,7 @@ async function messageCreate (client, message) {
         }
 
         let flags;
-        if (command.args && command.args.length) flags = processArguments(message, msgargs, command.args);
+        if (command.args && command.args.length) flags = processArguments(client, message, msgargs, command.args);
         if (flags && flags.invalid) {
             if (flags.prompt) return message.channel.send(flags.prompt);
             return;
@@ -229,10 +228,12 @@ async function messageCreate (client, message) {
             //@ts-ignore
             await command.execute({ client: client, message: message, args: msgargs, flags: flags });
         } catch (e) {
-            client.utils.log("ERROR", "src/events/message/messageCreate.js", `Error running command '${command.name}': ${e.message}`);
+            client.utils.log("ERROR", "src/events/message/messageCreate.js", `Error running command '${command.name}'`);
+            console.log(e);
         }
     } catch (e) {
-        client.utils.log("ERROR", "src/events/message/messageCreate.js", e.message);
+        client.utils.log("ERROR", "src/events/message/messageCreate.js", "");
+        console.log(e);
     }
 }
 
