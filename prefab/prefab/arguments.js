@@ -1,17 +1,16 @@
 //@ts-check
 
-const ms = require('ms');
-
 /**
  * Function to check if the user has passed in the proper arguments when using a command
+ * @param {import('../src/util/client')} client 
  * @param {import('discord.js').Message} message - The message to check the arguments for
  * @param {string[]} msgArgs - The arguments given by the user
  * @param {Arguments} expectedArgs - The expected arguments for the command
  * @returns {Flags} Returns the arguments mapped by their ID's if all the arguments were as expected, else, returns `undefined/false`
  */
-function processArguments(message, msgArgs, expectedArgs) {
+function processArguments(client, message, msgArgs, expectedArgs) {
     let counter = 0;
-    let amount, num, role, member, channel, attach, time;
+    let amount, num, role, member, channel, attach;
     let flags = {  };
 
     for (const argument of expectedArgs) {
@@ -126,17 +125,9 @@ function processArguments(message, msgArgs, expectedArgs) {
                     break;
 
                 case "TIME":
-                    time = msgArgs.slice(counter).join("").match(/(\d*)(\D*)/g);
-                    time.pop();
+                    num = client.utils.timeToMs(msgArgs.slice(counter).join(""));
 
-                    num = 0;
-                    for (let i = 0; i < time.length; i++) {
-                        try {
-                            num += ms(time[i]);
-                        } catch (e) {
-                            return { invalid: true, prompt: argument.prompt };
-                        }
-                    }
+                    if (!num) return { invalid: true, prompt: argument.prompt };
 
                     if (argument.min && num < argument.min) return { invalid: true, prompt: argument.prompt };
 
