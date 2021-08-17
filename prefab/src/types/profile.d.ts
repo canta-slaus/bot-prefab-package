@@ -1,10 +1,10 @@
-declare interface ProfileInfo {
+declare interface Profile {
     _id: string;
     prefab: {
         language: string;
         embedColor: string;
-    }
+    };
 }
 
-export { ProfileInfo };
-export default ProfileInfo;
+export { Profile };
+export default Profile;

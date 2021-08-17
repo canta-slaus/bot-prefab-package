@@ -1,4 +1,4 @@
-declare interface GuildInfo {
+declare interface Guild {
     _id: string;
     prefab: {
         prefix: string;
@@ -7,8 +7,8 @@ declare interface GuildInfo {
         commandPerms: any;
         commandCooldowns: any;
         commandAlias: any;
-    }
+    };
 }
 
-export { GuildInfo };
-export default GuildInfo;
+export { Guild };
+export default Guild;
