@@ -124,10 +124,10 @@ const dir = process.cwd();
             const src = path.join(dir, "config", "settings.json");
 
             console.log("\u001b[33m> Updating the project...\u001b[0m");
-            const version = JSON.parse(await fs.readFile(src, { encoding: "utf8" })).version;
-            const package = JSON.parse(await fs.readFile(path.join(__dirname, "package.json"), { encoding: "utf8" })).version;
+            const settings = JSON.parse(await fs.readFile(src, { encoding: "utf8" }));
+            const version = JSON.parse(await fs.readFile(path.join(__dirname, "package.json"), { encoding: "utf8" })).version;
 
-            if (version === package) return console.log("\u001b[32m> You already are using the newest version! Make sure to update the package itself.\u001b[0m");
+            if (settings.version === version) return console.log("\u001b[32m> You already are using the newest version! Make sure to update the package itself.\u001b[0m");
 
             const prefab = path.join(dir, "prefab");
             await fs.remove(prefab);
@@ -137,7 +137,10 @@ const dir = process.cwd();
             await fs.remove(commands);
             await fs.copy(path.join(__dirname, "prefab", "commands", "prefab"), commands);
 
-            console.log(`\u001b[32m> Successfully updated this project to v${package}!\u001b[0m`);
+            settings.version = version;
+            await fs.writeFile(src, JSON.stringify(settings, null, 4));
+
+            console.log(`\u001b[32m> Successfully updated this project to v${version}!\u001b[0m`);
 
             return;
         }
@@ -338,6 +341,7 @@ module.exports = class $Name extends Command {
             }
 
             console.log("\u001b[32m> Successfully added the event(s)!\u001b[0m");
+
             return;
         }
 
