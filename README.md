@@ -26,19 +26,19 @@ you can choose:
 To create a new project, it will ask your for a name for that project.\
 _More options like JS/TS, different databases as well as chosing which features/commands you want to have are planned for the future!_
 
-### Update a project (WIP)
+### Update a project
 The idea of the prefab is to allow you to easily create projects _but also_ to easily update to the newest version. Here's how it works:\
 All necessary base-prefab classes and files will be located in `src/prefab`. However, the classes you use are located in `src/util` and extend the base-prefab classes. This allows you to add anything you would like to add yourself to your own class and to update, the CLI tool will simply replace the base-files!\
 This setup also allows you to e.g. change which built-in features (and/or commands) you want to have, switch database systems, ... without too much incovenience.\
 _Any changes of the files in `src/prefab` might be lost when updating, as these will be completely replaced!_
 
-### Add command (WIP)
-This will ask you for a command name as well as the category and will then create a copy of the template in the category folder.
+### Add command
+This is a quick way of adding a new command - it will ask you for the command type (normal message or slash command), a command name and a category. After that, it will automatically add a new file in the category folder (and create the category folder if it doesn't exist already) and add some template code for you to work with.
 
-### Add event (WIP)
-Simply chose which event you would like to add and it will create the file in the right folder and add a blank template (including the type declarations)
+### Add event
+Simply chose which event(s) you would like to add and it will create the event(s) categorized into specific groups as well as blank template including the the parameters of that event and the necessary type declarations.
 
-### Add types (WIP)
+### Add types
 To make the most out of the `Manager` class, I recommend defining the key and document type it is storing. For that, you can use either [`JSDoc`](https://jsdoc.app/) as seen in some of the files of the prefab (e.g. `prefab/slashCommand.js`) or make use of `d.ts` files (e.g. `src/types/profile.d.ts`). However, not everyone might know how to use either of those but making use of this is very helpful and makes working with the `Manager` class a lot more pleasant. When you choose this, it will prompt you to specify which schema (actually the model file) you would like to generate the type for.\
 _Disclaimer: The resulting type might not be 100% accurate or might be missing some elements, if you find any missing/wrong type declarations, feel free to open a new [`issue`](https://github.com/canta-slaus/bot-prefab-package/issues) or join the Discord server!_
 
@@ -46,7 +46,7 @@ _Disclaimer: The resulting type might not be 100% accurate or might be missing s
 The package offers a feature-rich template to make prototyping bots easier and **faster**! It offers a command handler (including slash commands) and event handler. In the future, there will be more options to chose from when creating/updating your project.
 
 ## Available Features
-- Per server settings (prefix, disabling/enabling certain commands, disabling/enabling all commands in some channels, setting custom permission requirements for commands, customimizable cooldowns based on roles, adding custom aliases for commands)
+- Per server settings (prefix, disabling/enabling certain commands, disabling/enabling all commands in some channels, setting custom permission requirements for commands, customimizable cooldowns based on roles, adding custom aliases for certain commands)
 - Quality of life utility functions (pagination, ...)
 
 ## What's next?
