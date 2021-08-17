@@ -30,7 +30,7 @@ async function registerCommands(client, ...dirs) {
                         let cmdModule = new (require(path.join(__dirname, dir, file)))(client);
 
                         if (cmdModule instanceof Command) {
-                            let { name, aliases, category, hideCommand } = cmdModule;
+                            const { name, aliases, category, hideCommand } = cmdModule;
 
                             if (!name) {
                                 client.utils.log("WARNING", "src/registry.js", `The command '${path.join(__dirname, dir, file)}' doesn't have a name`);
@@ -38,7 +38,7 @@ async function registerCommands(client, ...dirs) {
                             }
 
                             if (client.commands.has(name)) {
-                                client.utils.log("WARNING", "src/registry.js", `The command name '${name}' has already been added.`);
+                                client.utils.log("WARNING", "src/registry.js", `The command name '${name}' (${path.join(__dirname, dir, file)}) has already been added.`);
                                 continue;
                             }
 
@@ -68,6 +68,18 @@ async function registerCommands(client, ...dirs) {
                                 client.categories.set('no category', commands);
                             }
                         } else {
+                            const { name, category, hideCommand } = cmdModule;
+
+                            if (!name) {
+                                client.utils.log("WARNING", "src/registry.js", `The command '${path.join(__dirname, dir, file)}' doesn't have a name`);
+                                continue;
+                            }
+
+                            if (client.slashCommands.has(name)) {
+                                client.utils.log("WARNING", "src/registry.js", `The command (slash) name '${name}' (${path.join(__dirname, dir, file)}) has already been added.`);
+                                continue;
+                            }
+
                             if (cmdModule.development) {
                                 const server = client.config.TEST_SERVERS[0];
 
@@ -77,7 +89,22 @@ async function registerCommands(client, ...dirs) {
                                 }
                             }
 
-                            client.slashCommands.set(cmdModule.name, cmdModule);
+                            client.slashCommands.set(name, cmdModule);
+
+                            if (hideCommand) continue;
+
+                            if (category) {
+                                let commands = client.categories.get(category.toLowerCase());
+                                if (!commands) commands = [category];
+                                commands.push(name);
+                                client.categories.set(category.toLowerCase(), commands);
+                            } else {
+                                client.utils.log("WARNING", "src/registry.js", `The command '${name}' doesn't have a category, it will default to 'No category'.`);
+                                let commands = client.categories.get('no category');
+                                if (!commands) commands = ['No category'];
+                                commands.push(name);
+                                client.categories.set('no category', commands);
+                            }
                         }
                     } catch (e) {
                         client.utils.log("ERROR", "src/registry.js", `Error loading commands: ${e.message}`);
