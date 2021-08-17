@@ -16,9 +16,11 @@ class PrefabClient extends Client {
         this.slashCommands = new Collection();
         /** @type {Collection<string, string[]>} */
         this.categories = new Collection();
-        /** @type {import('./tmanager').Manager<string, import('../src/types/guild').GuildInfo>} */
+        /** @type {import('./tmanager').Manager<string, import('../src/types/guild').Guild>} */
+        //@ts-ignore
         this.guildInfo = new Manager(this, require('../src/schemas/guild'));
-        /** @type {import('./tmanager').Manager<string, import('../src/types/profile').ProfileInfo>} */
+        /** @type {import('./tmanager').Manager<string, import('../src/types/profile').Profile>} */
+        //@ts-ignore
         this.profileInfo = new Manager(this, require('../src/schemas/profile'));
         /** @type {import('../config/config.json')} */
         this.config = require('../config/config.json');
@@ -27,6 +29,7 @@ class PrefabClient extends Client {
         /** @type {import('../config/languages.json')} */
         this.languages = require('../config/languages.json');
         /** @type {import('../src/util/utils')} */
+        //@ts-ignore
         this.utils = new (require('../src/util/utils'))(this);
         /** @type {import('discord.js').Collection<string, Collection<string, Collection<string, number>>>} */
         this.serverCooldowns = new Collection();
@@ -37,6 +40,7 @@ class PrefabClient extends Client {
     async loadCommands () {
         if (!this.application?.owner) await this.application?.fetch();
 
+        //@ts-ignore
         await registerCommands(this, '../src/commands');
 
         const guildCommands = toApplicationCommand(this.slashCommands.filter(s => s.development), this);
@@ -48,9 +52,18 @@ class PrefabClient extends Client {
         }
 
         if (globalCommands.length) await this.application.commands.set(globalCommands);
+
+        const devOnly = this.slashCommands.filter(s => s.devOnly).values();
+        for (const command of devOnly) {
+            if (command.development) {
+                const guild = await this.guilds.fetch(this.config.TEST_SERVERS[0]);
+                await guild.commands.cache.find(c => c.name === command.name).permissions.set({ permissions: this.config.DEVS.map(id => { return { id, type: "USER", permission: true } }) });
+            }
+        }
     }
 
     async loadEvents () {
+        //@ts-ignore
         await registerEvents(this, '../src/events');
     }
 
@@ -109,5 +122,5 @@ module.exports = PrefabClient;
  * @returns {import('discord.js').ApplicationCommandData[]} 
  */
 function toApplicationCommand (collection, client) {
-    return collection.map(s => { return { name: s.name, description: s.description, options: s.options, defaultPermission: s.devOnly ? false : s.defaultPermission, permissions: s.devOnly ? client.config.DEVS.map(id => { return { id, type: "USER", permission: true } }) : s.permissions } });
+    return collection.map(s => { return { name: s.name, description: s.description, options: s.options, defaultPermission: s.devOnly ? false : s.defaultPermission } });
 }
