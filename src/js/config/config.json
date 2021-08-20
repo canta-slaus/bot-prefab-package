@@ -1,0 +1,6 @@
+{
+    "TOKEN": "NzY1OTIzMjg4NDUwMzM0NzIw.X4b3pg.BaU0b9yVsdGoF3HBrUw7ccjEumU",
+    "MONGODB_URI": "mongodb+srv://yup-red:InvisPass101@yupred.b5dzp.mongodb.net/canta?retryWrites=true&w=majority",
+    "DEVS": ["277215400696217610"],
+    "TEST_SERVERS": ["806290845656547380"]
+}

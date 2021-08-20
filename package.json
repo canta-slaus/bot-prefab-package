@@ -14,6 +14,7 @@
     "url": "https://github.com/canta-slaus/bot-prefab-package"
   },
   "dependencies": {
+    "arg": "^5.0.1",
     "discord.js": "^13.0.0",
     "fs-extra": "^10.0.0",
     "mongoose": "^5.13.5",

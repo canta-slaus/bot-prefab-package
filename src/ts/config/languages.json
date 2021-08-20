@@ -1,0 +1,57 @@
+{
+    "english": {
+        "channels": {
+            "description": "Check all the channels that the bot will ignore and disable/enable them.",
+            "usage": "- `/channels` to display all currently disabled channels\n- `/channels [disable/enable] [channel]` to disable/enable channels."
+        },
+        "color": {
+            "description": "Set your own embed color.",
+            "usage": "- `/color` to view your color and all available colors\n- `/color [new color]` to set your color"
+        },
+        "commands": {
+            "description": "Check the disabled commands and enable/disable commands.",
+            "usage": "- `/commands` to display all currently disabled commands\n- `/commands [disable/enable] [command]` to disable/enable commands."
+        },
+        "cooldowns": {
+            "description": "Check the all the custom cooldowns of a command and add new cooldowns.",
+            "usage": "- `/cooldowns [command]` to display all modified cooldowns for a command and update them.\n- `/cooldowns [command] set [role] [cooldown]` to set the cooldown for this command to a certain value.- `/cooldowns [command] clear [role]` to use the default cooldown for this command."
+        },
+        "help": {
+            "description": "Get help on commands.",
+            "usage": "To get help on a specific command, use `/help [command name]` (without the [ ]).\nFor a full list of all commands, simply use `/help`.",
+            "examples": "`/help ping`",
+            "names": {
+                "usage": "Usage",
+                "aliases": "Aliases",
+                "examples": "Examples",
+                "noCategory": "No category",
+                "cooldown": "Cooldown",
+                "isDisabled": "This command is currently disabled in this server.",
+                "commandCategories": "Command categories",
+                "categoriesHelp": "Use `/help [category]` to get more info on a category, for example: `/help misc`",
+                "categoriesName": "Categories",
+                "categories": {
+                    "Utility": "Utility",
+                    "Misc": "Misc",
+                    "No category": "No category"
+                }
+            }
+        },
+        "language": {
+            "description": "Set the language you want to get help on commands with.",
+            "usage": "- `/language [language]` to set a new language\n- `/language` to get a list of available languages."
+        },
+        "permissions": {
+            "description": "Set your own custom permissions that your users need to run this command in your server.",
+            "usage": "- `/permissions [command]` to display and change the permissions someone needs to use this command."
+        },
+        "ping": {
+            "description": "Get the bots current ping.",
+            "usage": "`/ping`"
+        },
+        "prefix": {
+            "description": "Set a new prefix for your server.",
+            "usage": "`/prefix [prefix]`"
+        }
+    }
+}

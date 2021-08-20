@@ -21,16 +21,16 @@ After running
 ```
 $ prefab
 ```
-you can choose:
+it will prompt you different options to chose from. Optionally, you can also run `$ prefab -h` to check out the command line arguments to skip the first prompt.
 ### New project
-To create a new project, it will ask your for a name for that project.\
-_More options like JS/TS, different databases as well as chosing which features/commands you want to have are planned for the future!_
+To create a new project, it will ask your for a name for that project and which language you would like (JavaScript or TypeScript).\
+_More options like different databases as well as chosing which features/commands you want to have are planned for the future!_
 
 ### Update a project
 The idea of the prefab is to allow you to easily create projects _but also_ to easily update to the newest version. Here's how it works:\
 All necessary base-prefab classes and files will be located in `src/prefab`. However, the classes you use are located in `src/util` and extend the base-prefab classes. This allows you to add anything you would like to add yourself to your own class and to update, the CLI tool will simply replace the base-files!\
 This setup also allows you to e.g. change which built-in features (and/or commands) you want to have, switch database systems, ... without too much incovenience.\
-_Any changes of the files in `src/prefab` might be lost when updating, as these will be completely replaced!_
+_Any changes of the files in `src/prefab` and `src/commands/prefab` might be lost when updating, as these will be completely replaced!_
 
 ### Add command
 This is a quick way of adding a new command - it will ask you for the command type (normal message or slash command), a command name and a category. After that, it will automatically add a new file in the category folder (and create the category folder if it doesn't exist already) and add some template code for you to work with.
@@ -51,6 +51,6 @@ The package offers a feature-rich template to make prototyping bots easier and *
 
 ## What's next?
 The whole purpose of this package is to have a quick and easy way to setup a new project to prototype bots (or have an actual bot for your own server). I would like to keep it all optional and modular, so you can easily swap out certain parts or completely opting out of those. There will be a lot more quality of life features added to allow all kinds of bot behavior and give _you_ the best experience possible while using the package and it's CLI.\
-I plan to add support for more languages (TypeScript, ... ?), more databases (SQLite, Firebase, ...), more modules and built-in commands (auto-mod, mod-logs, moderation, reaction roles, ...) but always keeping it easy-to-use.\
+I plan to add support for more databases (SQLite, Firebase, ...), more modules and built-in commands (auto-mod, mod-logs, moderation, reaction roles, ...) but always keeping it easy-to-use.\
 
 _Disclaimer: This package might not be the best for everyone. The structure was purposefully designed to allow the user to add their own ideas, but keeping it easy to update (main flaw of my old bot-prefab is the fact that it was very tedious to update) and thus it comes with a few unneccesary things. It is intended to be a template for you to build on top and to prototype and play with new ideas or even add modules for other people to use, ..._
