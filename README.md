@@ -51,6 +51,6 @@ The package offers a feature-rich template to make prototyping bots easier and *
 
 ## What's next?
 The whole purpose of this package is to have a quick and easy way to setup a new project to prototype bots (or have an actual bot for your own server). I would like to keep it all optional and modular, so you can easily swap out certain parts or completely opting out of those. There will be a lot more quality of life features added to allow all kinds of bot behavior and give _you_ the best experience possible while using the package and it's CLI.\
-I plan to add support for more databases (SQLite, Firebase, ...), more modules and built-in commands (auto-mod, mod-logs, moderation, reaction roles, ...) but always keeping it easy-to-use.\
+I plan to add support for more databases (SQLite, Firebase, ...), more modules and built-in commands (auto-mod, mod-logs, moderation, reaction roles, ...) but always keeping it easy-to-use.
 
 _Disclaimer: This package might not be the best for everyone. The structure was purposefully designed to allow the user to add their own ideas, but keeping it easy to update (main flaw of my old bot-prefab is the fact that it was very tedious to update) and thus it comes with a few unneccesary things. It is intended to be a template for you to build on top and to prototype and play with new ideas or even add modules for other people to use, ..._
