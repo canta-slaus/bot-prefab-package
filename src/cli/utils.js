@@ -17,7 +17,7 @@ const getSettings = async () => {
         const files = await fs.readdir(path.join(dir));
 
         for (const file of files) {
-            const stat = await fs.lstat(path.join(__dirname, dir, file));
+            const stat = await fs.lstat(path.join(dir, file));
 
             if (stat.isDirectory()) continue;
 
