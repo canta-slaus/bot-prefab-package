@@ -10,10 +10,10 @@ const Command = require('../src/util/command');
  */
 async function registerCommands(client, ...dirs) {
     for (const dir of dirs) {
-        let files = await fs.readdir(path.join(__dirname, dir));
+        const files = await fs.readdir(path.join(__dirname, dir));
 
-        for(let file of files) {
-            let stat = await fs.lstat(path.join(__dirname, dir, file));
+        for(const file of files) {
+            const stat = await fs.lstat(path.join(__dirname, dir, file));
 
             if (file.includes("-ignore")) continue;
 
@@ -25,7 +25,7 @@ async function registerCommands(client, ...dirs) {
                         /**
                          * @type {Command}
                          */
-                        let cmdModule = new (require(path.join(__dirname, dir, file)))(client);
+                        const cmdModule = new (require(path.join(__dirname, dir, file)))(client);
 
                         const { name, category, hideCommand } = cmdModule;
 
@@ -35,7 +35,7 @@ async function registerCommands(client, ...dirs) {
                         }
 
                         if (client.commands.has(name)) {
-                            client.utils.log("WARNING", "src/registry.js", `The command (slash) name '${name}' (${path.join(__dirname, dir, file)}) has already been added.`);
+                            client.utils.log("WARNING", "src/registry.js", `The command name '${name}' (${path.join(__dirname, dir, file)}) has already been added.`);
                             continue;
                         }
 
@@ -79,18 +79,18 @@ async function registerCommands(client, ...dirs) {
  */
 async function registerEvents(client, ...dirs) {
     for (const dir of dirs) {
-        let files = await fs.readdir(path.join(__dirname, dir));
+        const files = await fs.readdir(path.join(__dirname, dir));
 
         for(let file of files) {
-            let stat = await fs.lstat(path.join(__dirname, dir, file));
+            const stat = await fs.lstat(path.join(__dirname, dir, file));
 
             if(stat.isDirectory())
                 await registerEvents(client, path.join(dir, file));
             else {
                 if(file.endsWith(".js")) {
-                    let eventName = file.substring(0, file.indexOf(".js"));
+                    const eventName = file.substring(0, file.indexOf(".js"));
                     try {
-                        let eventModule = require(path.join(__dirname, dir, file));
+                        const eventModule = require(path.join(__dirname, dir, file));
                         client.on(eventName, eventModule.bind(null, client));
                     } catch(e) {
                         client.utils.log("ERROR", "src/registry.js", `Error loading events: ${e.message}`);

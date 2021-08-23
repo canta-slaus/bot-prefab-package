@@ -5,10 +5,10 @@ import { Command } from "../src/util/command";
 
 async function registerCommands(client: Client, ...dirs: string[]) {
     for (const dir of dirs) {
-        let files = await fs.readdir(path.join(__dirname, dir));
+        const files = await fs.readdir(path.join(__dirname, dir));
 
         for(let file of files) {
-            let stat = await fs.lstat(path.join(__dirname, dir, file));
+            const stat = await fs.lstat(path.join(__dirname, dir, file));
 
             if (file.includes("-ignore")) continue;
 
@@ -17,7 +17,7 @@ async function registerCommands(client: Client, ...dirs: string[]) {
             else {
                 if(file.endsWith(".js")) {
                     try {
-                        let cmdModule: Command = new ((await import(path.join(__dirname, dir, file))).default)(client);
+                        const cmdModule: Command = new ((await import(path.join(__dirname, dir, file))).default)(client);
 
                         const { name, category, hideCommand } = cmdModule;
 
@@ -67,18 +67,18 @@ async function registerCommands(client: Client, ...dirs: string[]) {
 
 async function registerEvents(client: Client, ...dirs: string[]) {
     for (const dir of dirs) {
-        let files = await fs.readdir(path.join(__dirname, dir));
+        const files = await fs.readdir(path.join(__dirname, dir));
 
         for(let file of files) {
-            let stat = await fs.lstat(path.join(__dirname, dir, file));
+            const stat = await fs.lstat(path.join(__dirname, dir, file));
 
             if(stat.isDirectory())
                 await registerEvents(client, path.join(dir, file));
             else {
                 if(file.endsWith(".js")) {
-                    let eventName = file.substring(0, file.indexOf(".js"));
+                    const eventName = file.substring(0, file.indexOf(".js"));
                     try {
-                        let eventModule = (await import(path.join(__dirname, dir, file))).default;
+                        const eventModule = (await import(path.join(__dirname, dir, file))).default;
                         client.on(eventName, eventModule.bind(null, client));
                     } catch(e) {
                         client.utils.log("ERROR", "src/registry.ts", `Error loading events: ${e.message}`);
