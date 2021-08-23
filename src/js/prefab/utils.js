@@ -73,7 +73,7 @@ class PrefabUtils {
      * @param {number} [options.time] - The max time for createReactionCollector after which all of the reactions disappear
      * @example Examples can be seen in `src/utils/utils.md`
      */
-    async paginate(message, embeds, options) {
+    async paginate (message, embeds, options) {
         try {
             const pageMsg = await message.channel.send({ embeds: [embeds[0]] });
 
@@ -129,7 +129,7 @@ class PrefabUtils {
      * @return {Promise<import('discord.js').Message>} Returns the `message` sent by the user if there was one, returns `false` otherwise.
      * @example const reply = await getReply(message, { time: 10000, words: ['yes', 'y', 'n', 'no'] })
      */
-    async getReply(message, options) {
+    async getReply (message, options) {
         let time = 30000;
         let user = message.author;
         let words = [];
@@ -159,7 +159,7 @@ class PrefabUtils {
      * @return {number}
      * @example const rand = randomRange(0, 10)
      */
-    randomRange(min, max) {
+    randomRange (min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
@@ -169,7 +169,7 @@ class PrefabUtils {
      * @return {promise}
      * @example await delay(5000)
      */
-    delay(ms) {
+    delay (ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
@@ -179,7 +179,7 @@ class PrefabUtils {
      * @param {import('discord.js').PermissionString[]} perms - The permissions you want to check for
      * @return {string} Readable string containing all missing permissions
      */
-    missingPermissions(member, perms){
+    missingPermissions (member, perms){
         const missingPerms = member.permissions.missing(perms)
             .map(str=> `\`${str.replace(/_/g, ' ').toLowerCase().replace(/\b(\w)/g, char => char.toUpperCase())}\``);
     
@@ -194,7 +194,7 @@ class PrefabUtils {
      * @param {string} path - The path where the console log is coming from
      * @param {string} text - The message to be displayed
      */
-    log(type, path, text) {
+    log (type, path, text) {
         console.log(`\u001b[36;1m<bot-prefab>\u001b[0m\u001b[34m [${path}]\u001b[0m - ${consoleColors[type]}${text}\u001b[0m`);
     }
 
@@ -203,7 +203,7 @@ class PrefabUtils {
      * @param {object} data
      * @param {string} data.userID - The ID of the user you're constructing this embed for
      */
-    async CustomEmbed({ userID }) {
+    async CustomEmbed ({ userID }) {
         const userInfo = await this.client.profileInfo.get(userID);
 
         const embed = new MessageEmbed()
@@ -239,7 +239,7 @@ class PrefabUtils {
      * @returns {number} - Returns the human time input converted to milliseconds.
      * @example let time = timeToMs('10s') -> 10000
      */
-    timeToMs(timeStr) {
+    timeToMs (timeStr) {
         let values = getUnitAndNumber(timeStr);
         if (!values) return undefined;
 
@@ -264,7 +264,7 @@ class PrefabUtils {
      * @returns {string} - Returns a beautified converted string from milliseconds.
      * @example let time = timeToMs(3780000, { format: 'medium', spaces: true, options.spaces: 2, joinstring: ', ' }); -> '1 hr, 3 mins'
      */
-    msToTime(time, options = {}) {
+    msToTime (time, options = {}) {
         if (
             options.format === undefined ||
             (options.format !== 'short' && options.format !== 'medium' && options.format !== 'long')
@@ -349,7 +349,7 @@ const fullTimeUnitNames = {
  * /[^0-9.,:]/g = regex for getting all the chars in a string which are not equal to 0-9.,:
  * @param {string} timeString
  */
-function getUnitAndNumber(timeString) {
+function getUnitAndNumber (timeString) {
     timeString = timeString.toLowerCase().replace(/ /g, '');
 
     let unit = timeString.replace(/[0-9.,:]/g, ' ');
@@ -387,7 +387,7 @@ function getUnitAndNumber(timeString) {
 /**
  * @param {string[]} thisUnits
  */
-function getExactUnits(thisUnits) {
+function getExactUnits (thisUnits) {
     let exactUnits = [];
 
     for (let newUnit of thisUnits) {
@@ -417,7 +417,7 @@ function getExactUnits(thisUnits) {
  * @param {string} number
  * @param {string} unit
  */
-function getMs(number, unit) {
+function getMs (number, unit) {
     if (number.includes(':')) {
         switch (unit) {
             case 'min':

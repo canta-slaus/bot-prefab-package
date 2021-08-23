@@ -64,7 +64,7 @@ class PrefabUtils {
      * @param {number} [options.time] - The max time for createReactionCollector after which all of the reactions disappear
      * @example Examples can be seen in `src/utils/utils.md`
      */
-    async paginate(message: Message, embeds: MessageEmbed[], options?: { time?: number }) {
+    async paginate (message: Message, embeds: MessageEmbed[], options?: { time?: number }) {
         try {
             const pageMsg = await message.channel.send({ embeds: [embeds[0]] });
 
@@ -109,7 +109,7 @@ class PrefabUtils {
         }
     }
 
-    async getReply(message: Message, options?: { time?: number, user?: User, words?: string[], regexp?: RegExp }) {
+    async getReply (message: Message, options?: { time?: number, user?: User, words?: string[], regexp?: RegExp }) {
         let time = 30000;
         let user = message.author;
         let words: string[] = [];
@@ -132,15 +132,15 @@ class PrefabUtils {
         return;
     }
 
-    randomRange(min: number, max: number) {
+    randomRange (min: number, max: number) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    delay(ms: number) {
+    delay (ms: number) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    missingPermissions(member: GuildMember, perms: PermissionString[]){
+    missingPermissions (member: GuildMember, perms: PermissionString[]){
         const missingPerms = member.permissions.missing(perms)
             .map(str=> `\`${str.replace(/_/g, ' ').toLowerCase().replace(/\b(\w)/g, char => char.toUpperCase())}\``);
     
@@ -149,11 +149,11 @@ class PrefabUtils {
             missingPerms[0];
     }
 
-    log(type: 'SUCCESS'|'WARNING'|'ERROR', path: string, text: string) {
+    log (type: 'SUCCESS'|'WARNING'|'ERROR', path: string, text: string) {
         console.log(`\u001b[36;1m<bot-prefab>\u001b[0m\u001b[34m [${path}]\u001b[0m - ${consoleColors[type]}${text}\u001b[0m`);
     }
 
-    async CustomEmbed({ userID }: { userID: string }) {
+    async CustomEmbed ({ userID }: { userID: string }) {
         const userInfo = await this.client.profileInfo.get(userID);
 
         const embed = new MessageEmbed()
@@ -178,7 +178,7 @@ class PrefabUtils {
         return cd;
     }
 
-    timeToMs(timeStr: string) {
+    timeToMs (timeStr: string) {
         let values = getUnitAndNumber(timeStr);
         if (!values) return undefined;
 
@@ -192,7 +192,7 @@ class PrefabUtils {
         return ms;
     }
 
-    msToTime(time: number, options: { format?: 'long'|'medium'|'short', spaces?: boolean, unitRounding?: number, joinString?: string } = {}) {
+    msToTime (time: number, options: { format?: 'long'|'medium'|'short', spaces?: boolean, unitRounding?: number, joinString?: string } = {}) {
         if (
             options.format === undefined ||
             (options.format !== 'short' && options.format !== 'medium' && options.format !== 'long')
@@ -271,7 +271,7 @@ const fullTimeUnitNames: { [x: string]: { [y: string]: string } } = {
     cen: { short: 'cen', medium: 'cent', long: 'century' },
 }
 
-function getUnitAndNumber(timeString: string) {
+function getUnitAndNumber (timeString: string) {
     timeString = timeString.toLowerCase().replace(/ /g, '');
 
     let unit = timeString.replace(/[0-9.,:]/g, ' ');
@@ -284,7 +284,7 @@ function getUnitAndNumber(timeString: string) {
         .split(' ')
         .filter((str) => str !== '');
 
-    units = getExactUnits(units)!;
+    units = getExactUnits (units)!;
 
     if (
         unit === '' ||
@@ -306,7 +306,7 @@ function getUnitAndNumber(timeString: string) {
     return ans;
 }
 
-function getExactUnits(thisUnits: string[]) {
+function getExactUnits (thisUnits: string[]) {
     let exactUnits = [];
 
     for (let newUnit of thisUnits) {
@@ -331,7 +331,7 @@ function getExactUnits(thisUnits: string[]) {
     return exactUnits;
 }
 
-function getMs(number: string, unit: string) {
+function getMs (number: string, unit: string) {
     if (number.includes(':')) {
         switch (unit) {
             case 'min':
