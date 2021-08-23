@@ -5,10 +5,10 @@ const fs = require('fs-extra');
 const path = require('path');
 const dir = process.cwd();
 
-const { isTemplate, cap, getSettings } = require('./utils');
+const { isTemplate, cap, getSettings, log } = require('./utils');
 
 module.exports = async () => {
-    if (!(await isTemplate())) return console.log("\u001b[31m> This doesn't seem to be a project made using this package!\u001b[0m");
+    if (!(await isTemplate())) return log("ERROR", "This doesn't seem to be a project made using this package!");
 
     const settings = await getSettings();
 
@@ -26,22 +26,22 @@ module.exports = async () => {
 
     if (!schema) return;
 
-    console.log("\u001b[33m> Fetching schema and generating type...\u001b[0m");
+    log("WARNING", "Fetching schema and generating type...");
     const model = require(path.join(dir, "src", "schemas", schema));
     const types = getObjectTypes(model.schema.obj, 4);
-    console.log("\u001b[32m> Fetched the schema and successfully generated the type!\u001b[0m");
+    log("SUCCESS", "Fetched the schema and successfully generated the type!")
 
-    console.log("\u001b[33m> Adding .d.ts file...\u001b[0m");
+    log("WARNING", "Adding .d.ts file...");
     const file = path.join(dir, "src", "types", schema.replace('.js', '.d.ts'));
     await fs.remove(file);
 
     const name = cap(schema.replace('.js', ''));
     await fs.writeFile(file, `declare interface ${name} {\n${types}}\n\nexport { ${name} };\n`);
-    console.log("\u001b[32m> Added the .d.ts file!\u001b[0m");
+    log("SUCCESS", "Added the .d.ts file!");
 
-    console.log("\u001b[34m> If this is a new schema, here is a copy-paste to add to your client in \"src/util/client.js\":\u001b[0m\n");
-    console.log(`\u001b[32m/** @type {import('../../prefab/tmanager').Manager<${types.match(/_id: (\D*?);/)[1]}, import('../types/${name.toLowerCase()}').${name}>} */\u001b[0m`);
-    console.log(`\u001b[34mthis\u001b[0m.${name.toLowerCase()} = \u001b[34mnew\u001b[0m \u001b[33mManager\u001b[0m(\u001b[34mthis\u001b[33m, require\u001b[0m(\u001b[31m'../schemas/${schema.replace('.js', '')}'\u001b[0m));`);
+    log("CLEAR", "\u001b[34m> If this is a new schema, here is a copy-paste to add to your client in \"src/util/client.js\":\u001b[0m\n");
+    log("CLEAR", `\u001b[32m/** @type {import('../../prefab/tmanager').Manager<${types.match(/_id: (\D*?);/)[1]}, import('../types/${name.toLowerCase()}').${name}>} */\u001b[0m`);
+    log("CLEAR", `\u001b[34mthis\u001b[0m.${name.toLowerCase()} = \u001b[34mnew\u001b[0m \u001b[33mManager\u001b[0m(\u001b[34mthis\u001b[33m, require\u001b[0m(\u001b[31m'../schemas/${schema.replace('.js', '')}'\u001b[0m));`);
 }
 
 /**

@@ -4,6 +4,7 @@ const prompts = require('prompts');
 const fs = require('fs-extra');
 const path = require('path');
 const util = require('util');
+const { log } = require('./utils');
 const exec = util.promisify(require('child_process').exec);
 const dir = process.cwd();
 
@@ -29,7 +30,7 @@ module.exports = async () => {
 
     if (!project?.length || !language) return;
 
-    console.log("\u001b[33m> Creating new project...\u001b[0m");
+    log("WARNING", "Creating new project...");
 
     let src = "";
     let pm = "";
@@ -51,24 +52,24 @@ module.exports = async () => {
             if (!exists) throw new Error();
             pm = "yarn";
         } catch (e) {
-            return console.log("\u001b[31m> Oops, I couldn't find the global package installation folders!\u001b[0m");
+            return log("ERROR", "Oops, I couldn't find the global package installation folders!");
         }
     }
 
     await fs.mkdir(project);
-    console.log("\u001b[32m> Created a new project folder!\u001b[0m");
+    log("SUCCESS", "Created a new project folder!");
 
-    console.log("\u001b[33m> Generating files...\u001b[0m");
+    log("WARNING", "Generating files...");
     await fs.copy(src, path.join(dir, project));
-    console.log("\u001b[32m> Generated all files!\u001b[0m");
+    log("SUCCESS", "Generated all files!");
 
-    console.log("\u001b[33m> Installing packages...\u001b[0m");
+    log("WARNING", "Installing packages...");
     await exec(`${pm} install`, { cwd: `./${project}` });
     const packagePath = path.join(dir, project, "package.json");
     const pkg = JSON.parse(await fs.readFile(packagePath, { encoding: "utf8" }));
     pkg.name = project.toLowerCase();
     await fs.writeFile(packagePath, JSON.stringify(pkg, null, 2));
-    console.log("\u001b[32m> Installed all packages!\u001b[0m");
+    log("SUCCESS", "Installed all packages!");
 
-    console.log("\u001b[32m> Done!\u001b[0m");
+    log("SUCCESS", "Done!");
 }

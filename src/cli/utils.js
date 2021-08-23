@@ -4,6 +4,13 @@ const fs = require('fs-extra');
 const path = require('path');
 const dir = process.cwd();
 
+const colors = {
+    "SUCCESS": "\u001b[32m",
+    "WARNING": "\u001b[33m",
+    "ERROR": "\u001b[31m",
+    "CLEAR": "\u001b[0m"
+}
+
 /**
  * @returns {Promise<Settings>}
  */
@@ -42,8 +49,14 @@ const isTemplate = async () => await fs.pathExists(path.join(dir, "config", "set
  */
 const cap = (string) => string.charAt(0).toUpperCase() + string.slice(1);
 
+/**
+ * @param {ConsoleColors} type 
+ * @param {string} text 
+ */
+const log = (type, text) => console.log(`${colors[type]}> ${text}${colors.CLEAR}`);
+
 module.exports = {
-    isTemplate, cap, getSettings
+    isTemplate, cap, getSettings, log
 }
 
 /**
@@ -52,3 +65,9 @@ module.exports = {
  * @property {string} version 
  * @property {'js'|'ts'} language 
  */
+
+/**
+ * @typedef ConsoleColors 
+ * @type {'SUCCESS'|'WARNING'|'ERROR'|'CLEAR'}
+ */
+

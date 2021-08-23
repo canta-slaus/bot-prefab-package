@@ -5,10 +5,10 @@ const fs = require('fs-extra');
 const path = require('path');
 const dir = process.cwd();
 
-const { isTemplate, getSettings } = require('./utils');
+const { isTemplate, getSettings, log } = require('./utils');
 
 module.exports = async () => {
-    if (!(await isTemplate())) return console.log("\u001b[31m> This doesn't seem to be a project made using this package!\u001b[0m");
+    if (!(await isTemplate())) return log("ERROR", "This doesn't seem to be a project made using this package!");
 
     const settings = await getSettings();
 
@@ -84,7 +84,7 @@ module.exports = async () => {
 
     const choices = allEvents.filter(e => !existingEvents.includes(e.title));
 
-    if (!choices.length) return console.log("\u001b[33m> You have added every event already!\u001b[0m")
+    if (!choices.length) return log("SUCCESS", "You have added every event already!");
 
     const { events } = await prompts([
         {
@@ -97,7 +97,7 @@ module.exports = async () => {
 
     if (!events?.length) return;
 
-    console.log("\u001b[33m> Generating event file(s)...\u001b[0m");
+    log("WARNING", "Generating event file(s)...");
 
     for (const event of events) {
         const [ category, eventName ] = event[0].split(".");
@@ -108,7 +108,7 @@ module.exports = async () => {
         const eventPath = path.join(categoryPath, eventName + `.${settings.language}`);
 
         if (await fs.pathExists(eventPath)) {
-            console.log(`\u001b[33m> An event file at "src/events/${category}/${eventName}.${settings.language}" already exists\u001b[0m`);
+            log("ERROR", `An event file at "src/events/${category}/${eventName}.${settings.language}" already exists`)
             continue;
         }
 
@@ -116,7 +116,7 @@ module.exports = async () => {
         await fs.writeFile(eventPath, code);
     }
 
-    console.log("\u001b[32m> Successfully added the event(s)!\u001b[0m");
+    log("SUCCESS", "Successfully added the event(s)!");
 }
 
 /**

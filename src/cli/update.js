@@ -6,10 +6,10 @@ const path = require('path');
 const dir = process.cwd();
 const pkg = require('../../package.json');
 
-const { isTemplate, getSettings } = require('./utils');
+const { isTemplate, getSettings, log } = require('./utils');
 
 module.exports = async () => {
-    if (!(await isTemplate())) return console.log("\u001b[31m> This doesn't seem to be a project made using this package!\u001b[0m");
+    if (!(await isTemplate())) return log("ERROR", "This doesn't seem to be a project made using this package!");
 
     const { confirm } = await prompts([
         {
@@ -20,14 +20,14 @@ module.exports = async () => {
         }
     ]);
 
-    if (!confirm) return console.log("\u001b[33m> Canceled update!\u001b[0m");
+    if (!confirm) return;
 
     const src = path.join(dir, "config", "settings.json");
 
-    console.log("\u001b[33m> Updating the project...\u001b[0m");
+    log("WARNING", "Updating the project...")
     const settings = await getSettings();
 
-    if (settings.version === pkg.version) return console.log("\u001b[32m> You already are using the newest version! Make sure to update the package itself.\u001b[0m");
+    if (settings.version === pkg.version) return log("SUCCESS", "You already are using the newest version! Make sure to update the package itself!");
 
     const prefab = path.join(dir, "prefab");
     await fs.remove(prefab);
@@ -40,5 +40,5 @@ module.exports = async () => {
     settings.version = pkg.version;
     await fs.writeFile(src, JSON.stringify(settings, null, 4));
 
-    console.log(`\u001b[32m> Successfully updated this project to v${pkg.version}!\u001b[0m`);
+    log("SUCCESS", ` Successfully updated this project to v${pkg.version}!`);
 }

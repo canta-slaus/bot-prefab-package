@@ -5,7 +5,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const dir = process.cwd();
 
-const { isTemplate, cap, getSettings } = require('./utils');
+const { isTemplate, cap, getSettings, log } = require('./utils');
 
 const jsCommand = `//@ts-check
 
@@ -53,7 +53,7 @@ export default class $Name extends Command {
 `
 
 module.exports = async () => {
-    if (!(await isTemplate())) return console.log("\u001b[31m> This doesn't seem to be a project made using this package!\u001b[0m");
+    if (!(await isTemplate())) return log("ERROR", "This doesn't seem to be a project made using this package!");
 
     const { name, category } = await prompts([
         {
@@ -76,11 +76,11 @@ module.exports = async () => {
 
     const settings = await getSettings();
 
-    console.log("\u001b[33m> Generating category and command...\u001b[0m");
+    log("WARNING", "Generating category and command...");
     if (!(await fs.pathExists(categoryPath))) await fs.mkdir(categoryPath);
 
     const commandPath = path.join(categoryPath, name.toLowerCase() + `.${settings.language}`);
-    if (await fs.pathExists(commandPath)) return console.log("\u001b[33m> That command already exists in that category!\u001b[0m");
+    if (await fs.pathExists(commandPath)) return log("ERROR", "That command already exists in that category!");
 
     const command = settings.language === "js" ? jsCommand : tsCommand;
 
@@ -88,5 +88,5 @@ module.exports = async () => {
                                            .replace(/\$name/g, name.toLowerCase())
                                            .replace(/\$Category/g, category));
 
-    console.log("\u001b[32m> Successfully create a new command!\u001b[0m");
+    log("SUCCESS", "Successfully create a new command!");
 }
