@@ -3,12 +3,13 @@
 
 const prompts = require('prompts');
 
-const { commands, events, info, newProject, types, update, args } = require('./src/cli');
+const { commands, events, info, newProject, types, update, args, extra, validate, parse } = require('./src/cli');
+const { log } = require('./src/cli/utils');
 
 (async () => {
     try {
         if (parseInt(process.versions.node.split(".")[0]) < 16) {
-            console.log("\u001b[33m> It looks like you're using a Node.js version below 16.x.x. Discord.js v13 requires Node.js v16.6 or higher, make sure you update!\u001b[0m");
+            log("WARNING", "It looks like you're using a Node.js version below 16.x.x. Discord.js v13 requires Node.js v16.6 or higher, make sure you update!");
         }
 
         let action = args();
@@ -23,7 +24,7 @@ const { commands, events, info, newProject, types, update, args } = require('./s
                     { title: "├ Update a project", description: "Update your current project to the newest version!", value: "update" },
                     { title: "├ Add command", description: "Add a new command to the current project", value: "commands" },
                     { title: "├ Add event", description: "Add a new event listener to the current project!", value: "events" },
-                    { title: "├ Add types", description: "Add the needed type declarations for a schema!", value: "types" },
+                    { title: "├ Extra tools", description: "Additional tools (type generator, command validator, ...)", value: "extra" },
                     { title: "└ Information", description: "Get some information about this CLI tool!", value: "info" }
                 ],
                 warn: "This is still WIP!",
@@ -39,8 +40,11 @@ const { commands, events, info, newProject, types, update, args } = require('./s
         else if (action === "commands") await commands();
         else if (action === "events") await events();
         else if (action === "types") await types();
+        else if (action === "extra") await extra();
+        else if (action === "validate") await validate();
+        else if (action === "parse") await parse();
     } catch (e) {
-        console.log("\u001b[31m> Oops, something went wrong!\u001b[0m");
+        log("ERROR", "Oops, something went wrong!");
         console.log(e);
     }
 })();
