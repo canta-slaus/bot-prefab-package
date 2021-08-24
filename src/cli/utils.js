@@ -53,7 +53,7 @@ const cap = (string) => string.charAt(0).toUpperCase() + string.slice(1);
  * @param {ConsoleColors} type 
  * @param {string} text 
  */
-const log = (type, text) => console.log(`${colors[type]}> ${text}${colors.CLEAR}`);
+const log = (type, text) => console.log(`${colors[type]}${type === "CLEAR" ? "" : ">"} ${text}${colors.CLEAR}`);
 
 module.exports = {
     isTemplate, cap, getSettings, log
