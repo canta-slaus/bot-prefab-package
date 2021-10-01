@@ -1,11 +1,11 @@
-import { Schema, model } from 'mongoose';
-import { prefabProfile } from '../../prefab/schemas';
+import { Schema, model } from "mongoose";
+import { prefabProfile } from "../../prefab/schemas";
 
 const user = new Schema({
-    _id: String,
-    prefab: prefabProfile,
+	_id: String,
+	prefab: prefabProfile
 
-    // You can add your own things after this 
+	// You can add your own things after this
 });
 
-export = model('users', user);
+export = model("users", user);

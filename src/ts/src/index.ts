@@ -4,5 +4,5 @@ import { Client } from "./util/client";
 const client = new Client({ intents: Object.values(Intents.FLAGS) });
 
 (async () => {
-    client.login(client.config.TOKEN);
+	await client.login(client.config.TOKEN);
 })();

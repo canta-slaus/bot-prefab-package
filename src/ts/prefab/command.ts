@@ -26,74 +26,74 @@ class PrefabCommand {
     subcommands: { [x: string]: Subcommand } | null;
 
     constructor (client: Client, {
-        name = "",
-        description = "",
-        category = "No category",
-        options = [],
-        defaultPermission = true,
-        permissions = [],
-        development = true,
-        devOnly = false,
-        hideCommand = false,
-        ownerOnly = false,
-        guildOnly = true,
-        perms = [],
-        clientPerms = [],
-        nsfw = false,
-        cooldown = 0,
-        globalCooldown = true,
-        ignoreDisabledChannels = false,
-        canNotDisable = false,
-        canNotSetCooldown = true,
-        groups = null,
-        subcommands = null
+    	name = "",
+    	description = "",
+    	category = "No category",
+    	options = [],
+    	defaultPermission = true,
+    	permissions = [],
+    	development = true,
+    	devOnly = false,
+    	hideCommand = false,
+    	ownerOnly = false,
+    	guildOnly = true,
+    	perms = [],
+    	clientPerms = [],
+    	nsfw = false,
+    	cooldown = 0,
+    	globalCooldown = true,
+    	ignoreDisabledChannels = false,
+    	canNotDisable = false,
+    	canNotSetCooldown = true,
+    	groups = null,
+    	subcommands = null
     }: CommandOptions) {
-        this.client = client;
-        this.name = name;
-        this.description = description;
-        this.category = category;
-        this.options = options;
-        this.defaultPermission = defaultPermission;
-        this.permissions = permissions;
-        this.development = development;
-        this.devOnly = devOnly;
-        this.hideCommand = hideCommand;
-        this.ownerOnly = ownerOnly;
-        this.guildOnly = guildOnly;
-        this.perms = perms;
-        this.clientPerms = clientPerms;
-        this.nsfw = nsfw;
-        this.cooldown = cooldown;
-        this.globalCooldown = globalCooldown;
-        this.canNotDisable = canNotDisable;
-        this.canNotSetCooldown = canNotSetCooldown;
-        this.ignoreDisabledChannels = ignoreDisabledChannels;
-        this.groups = groups;
-        this.subcommands = subcommands;
+    	this.client = client;
+    	this.name = name;
+    	this.description = description;
+    	this.category = category;
+    	this.options = options;
+    	this.defaultPermission = defaultPermission;
+    	this.permissions = permissions;
+    	this.development = development;
+    	this.devOnly = devOnly;
+    	this.hideCommand = hideCommand;
+    	this.ownerOnly = ownerOnly;
+    	this.guildOnly = guildOnly;
+    	this.perms = perms;
+    	this.clientPerms = clientPerms;
+    	this.nsfw = nsfw;
+    	this.cooldown = cooldown;
+    	this.globalCooldown = globalCooldown;
+    	this.canNotDisable = canNotDisable;
+    	this.canNotSetCooldown = canNotSetCooldown;
+    	this.ignoreDisabledChannels = ignoreDisabledChannels;
+    	this.groups = groups;
+    	this.subcommands = subcommands;
 
-        if (options && options.length) this.options = options;
-        else if (groups && Object.keys(groups)) this.options = getSubcommandGroupOptions(groups);
-        else if (subcommands && Object.keys(subcommands)) this.options = getSubcommandOptions(subcommands);
+    	if (options && options.length) this.options = options;
+    	else if (groups && Object.keys(groups)) this.options = getSubcommandGroupOptions(groups);
+    	else if (subcommands && Object.keys(subcommands)) this.options = getSubcommandOptions(subcommands);
     }
 
     async setCooldown (interaction: CommandInteraction) {
-        const cd = await this.client.utils.getCooldown(this, interaction);
+    	const cd = await this.client.utils.getCooldown(this, interaction);
 
-        if (!cd) return;
+    	if (!cd) return;
 
-        let cooldowns;
-        if (typeof this.globalCooldown === 'undefined' || this.globalCooldown) {
-            if (!this.client.globalCooldowns.has(this.name)) this.client.globalCooldowns.set(this.name, new Collection());
-            cooldowns = this.client.globalCooldowns;
-        } else {
-            if (!this.client.serverCooldowns.has(interaction.guild!.id)) this.client.serverCooldowns.set(interaction.guild!.id, new Collection());
-            cooldowns = this.client.serverCooldowns.get(interaction.guild!.id);
-            if (!cooldowns!.has(this.name)) cooldowns!.set(this.name, new Collection());
-        }
+    	let cooldowns;
+    	if (typeof this.globalCooldown === "undefined" || this.globalCooldown) {
+    		if (!this.client.globalCooldowns.has(this.name)) this.client.globalCooldowns.set(this.name, new Collection());
+    		cooldowns = this.client.globalCooldowns;
+    	} else {
+    		if (!this.client.serverCooldowns.has(interaction.guild!.id)) this.client.serverCooldowns.set(interaction.guild!.id, new Collection());
+    		cooldowns = this.client.serverCooldowns.get(interaction.guild!.id);
+    		if (!cooldowns!.has(this.name)) cooldowns!.set(this.name, new Collection());
+    	}
 
-        const now = Date.now();
-        const timestamps = cooldowns!.get(this.name);
-        const cooldownAmount = cd * 1000;
+    	const now = Date.now();
+    	const timestamps = cooldowns!.get(this.name);
+    	const cooldownAmount = cd * 1000;
 
         timestamps!.set(interaction.user.id, now);
         setTimeout(() => timestamps!.delete(interaction.user.id), cooldownAmount);
@@ -103,39 +103,39 @@ class PrefabCommand {
 export { PrefabCommand, CommandOptions };
 
 function getSubcommandGroupOptions (groups: { [x: string]: SubcommandGroup }) {
-    const names = Object.keys(groups);
-    const options = [];
+	const names = Object.keys(groups);
+	const options = [];
 
-    for (const name of names) {
-        const option: ApplicationCommandOptionData = {
-            name,
-            description: groups[name].description,
-            options: getSubcommandOptions(groups[name].subcommands),
-            type: "SUB_COMMAND_GROUP"
-        }
+	for (const name of names) {
+		const option: ApplicationCommandOptionData = {
+			name,
+			description: groups[name].description,
+			options: getSubcommandOptions(groups[name].subcommands),
+			type: "SUB_COMMAND_GROUP"
+		};
 
-        options.push(option);
-    }
+		options.push(option);
+	}
 
-    return options;
+	return options;
 }
 
 function getSubcommandOptions (subcommands: { [x: string]: Subcommand }) {
-    const names = Object.keys(subcommands);
-    const options = [];
+	const names = Object.keys(subcommands);
+	const options = [];
 
-    for (const name of names) {
-        const option: ApplicationCommandOptionData = {
-            name,
-            description: subcommands[name].description,
-            options: subcommands[name].args,
-            type: "SUB_COMMAND"
-        }
+	for (const name of names) {
+		const option: ApplicationCommandOptionData = {
+			name,
+			description: subcommands[name].description,
+			options: subcommands[name].args,
+			type: "SUB_COMMAND"
+		};
 
-        options.push(option);
-    }
+		options.push(option);
+	}
 
-    return options;
+	return options;
 }
 
 declare interface SubcommandGroup {
@@ -150,7 +150,7 @@ declare interface Subcommand {
 }
 
 declare interface Argument {
-    type: 'STRING'|'INTEGER'|'BOOLEAN'|'USER'|'CHANNEL'|'ROLE'|'MENTIONABLE'|'NUMBER';
+    type: "STRING"|"INTEGER"|"BOOLEAN"|"USER"|"CHANNEL"|"ROLE"|"MENTIONABLE"|"NUMBER";
     name: string;
     description: string;
     choices?: Choice[];

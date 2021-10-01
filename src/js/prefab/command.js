@@ -1,134 +1,133 @@
-//@ts-check
-
-const { Collection } = require('discord.js');
+// @ts-check
+const { Collection } = require("discord.js");
 
 class PrefabCommand {
-    /**
+	/**
      * @param {import('../src/util/client')} client - The client isntance
      * @param {CommandOptions} options - Settings for the slash command
      */
-    constructor (client, {
-        name = "",
-        description = "",
-        category = "No category",
-        options = [],
-        defaultPermission = true,
-        permissions = [],
-        development = true,
-        devOnly = false,
-        hideCommand = false,
-        ownerOnly = false,
-        guildOnly = true,
-        perms = [],
-        clientPerms = [],
-        nsfw = false,
-        cooldown = 0,
-        globalCooldown = true,
-        ignoreDisabledChannels = false,
-        canNotDisable = false,
-        canNotSetCooldown = true,
-        groups = null,
-        subcommands = null
-    }) {
-        this.client = client;
-        this.name = name;
-        this.description = description;
-        this.category = category;
-        this.options = options;
-        this.defaultPermission = defaultPermission;
-        this.permissions = permissions;
-        this.development = development;
-        this.devOnly = devOnly;
-        this.hideCommand = hideCommand;
-        this.ownerOnly = ownerOnly;
-        this.guildOnly = guildOnly;
-        this.perms = perms;
-        this.clientPerms = clientPerms;
-        this.nsfw = nsfw;
-        this.cooldown = cooldown;
-        this.globalCooldown = globalCooldown;
-        this.canNotDisable = canNotDisable;
-        this.canNotSetCooldown = canNotSetCooldown;
-        this.ignoreDisabledChannels = ignoreDisabledChannels;
-        this.groups = groups;
-        this.subcommands = subcommands;
+	constructor (client, {
+		name = "",
+		description = "",
+		category = "No category",
+		options = [],
+		defaultPermission = true,
+		permissions = [],
+		development = true,
+		devOnly = false,
+		hideCommand = false,
+		ownerOnly = false,
+		guildOnly = true,
+		perms = [],
+		clientPerms = [],
+		nsfw = false,
+		cooldown = 0,
+		globalCooldown = true,
+		ignoreDisabledChannels = false,
+		canNotDisable = false,
+		canNotSetCooldown = true,
+		groups = null,
+		subcommands = null
+	}) {
+		this.client = client;
+		this.name = name;
+		this.description = description;
+		this.category = category;
+		this.options = options;
+		this.defaultPermission = defaultPermission;
+		this.permissions = permissions;
+		this.development = development;
+		this.devOnly = devOnly;
+		this.hideCommand = hideCommand;
+		this.ownerOnly = ownerOnly;
+		this.guildOnly = guildOnly;
+		this.perms = perms;
+		this.clientPerms = clientPerms;
+		this.nsfw = nsfw;
+		this.cooldown = cooldown;
+		this.globalCooldown = globalCooldown;
+		this.canNotDisable = canNotDisable;
+		this.canNotSetCooldown = canNotSetCooldown;
+		this.ignoreDisabledChannels = ignoreDisabledChannels;
+		this.groups = groups;
+		this.subcommands = subcommands;
 
-        if (options && options.length) this.options = options;
-        else if (groups && Object.keys(groups)) this.options = getSubcommandGroupOptions(this.groups);
-        else if (subcommands && Object.keys(subcommands)) this.options = getSubcommandOptions(this.subcommands);
-    }
+		if (options && options.length) this.options = options;
+		else if (groups && Object.keys(groups)) this.options = getSubcommandGroupOptions(this.groups);
+		else if (subcommands && Object.keys(subcommands)) this.options = getSubcommandOptions(this.subcommands);
+	}
 
-    /**
-     * @param {import('discord.js').CommandInteraction} interaction 
+	/**
+     * @param {import('discord.js').CommandInteraction} interaction
      */
-    async setCooldown (interaction) {
-        const cd = await this.client.utils.getCooldown(this, interaction);
+	async setCooldown (interaction) {
+		const cd = await this.client.utils.getCooldown(this, interaction);
 
-        if (!cd) return;
+		if (!cd) return;
 
-        let cooldowns;
-        if (typeof this.globalCooldown === 'undefined' || this.globalCooldown) {
-            if (!this.client.globalCooldowns.has(this.name)) this.client.globalCooldowns.set(this.name, new Collection());
-            cooldowns = this.client.globalCooldowns;
-        } else {
-            if (!this.client.serverCooldowns.has(interaction.guild.id)) this.client.serverCooldowns.set(interaction.guild.id, new Collection());
-            cooldowns = this.client.serverCooldowns.get(interaction.guild.id);
-            if (!cooldowns.has(this.name)) cooldowns.set(this.name, new Collection());
-        }
+		let cooldowns;
+		if (typeof this.globalCooldown === "undefined" || this.globalCooldown) {
+			if (!this.client.globalCooldowns.has(this.name)) this.client.globalCooldowns.set(this.name, new Collection());
+			cooldowns = this.client.globalCooldowns;
+		} else {
+			if (!this.client.serverCooldowns.has(interaction.guild.id)) this.client.serverCooldowns.set(interaction.guild.id, new Collection());
+			cooldowns = this.client.serverCooldowns.get(interaction.guild.id);
+			if (!cooldowns.has(this.name)) cooldowns.set(this.name, new Collection());
+		}
 
-        const now = Date.now();
-        const timestamps = cooldowns.get(this.name);
-        const cooldownAmount = cd * 1000;
+		const now = Date.now();
+		const timestamps = cooldowns.get(this.name);
+		const cooldownAmount = cd * 1000;
 
-        timestamps.set(interaction.user.id, now);
-        setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
-    }
+		timestamps.set(interaction.user.id, now);
+		setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
+	}
 }
 
 module.exports = PrefabCommand;
 
 /**
- * @param {Object.<string, import('./command').SubcommandGroup>} groups 
+ * @param {Object.<string, import('./command').SubcommandGroup>} groups
  */
 function getSubcommandGroupOptions (groups) {
-    const names = Object.keys(groups);
-    const options = [];
+	const names = Object.keys(groups);
+	const options = [];
 
-    for (const name of names) {
-        /** @type {import('discord.js').ApplicationCommandOptionData} */
-        const option = {
-            name,
-            description: groups[name].description,
-            options: getSubcommandOptions(groups[name].subcommands),
-            type: "SUB_COMMAND_GROUP"
-        }
+	for (const name of names) {
+		/** @type {import('discord.js').ApplicationCommandOptionData} */
+		const option = {
+			name,
+			description: groups[name].description,
+			options: getSubcommandOptions(groups[name].subcommands),
+			type: "SUB_COMMAND_GROUP"
+		};
 
-        options.push(option);
-    }
+		options.push(option);
+	}
 
-    return options;
+	return options;
 }
 
 /**
- * @param {Object.<string, import('./command').Subcommand>} subcommands 
+ * @param {Object.<string, import('./command').Subcommand>} subcommands
  */
 function getSubcommandOptions (subcommands) {
-    const names = Object.keys(subcommands);
-    const options = [];
+	const names = Object.keys(subcommands);
+	const options = [];
 
-    for (const name of names) {
-        /** @type {import('discord.js').ApplicationCommandOptionData} */
-        const option = {
-            name,
-            description: subcommands[name].description,
-            options: subcommands[name].args,
-            type: "SUB_COMMAND"
-        }
+	for (const name of names) {
+		/** @type {import('discord.js').ApplicationCommandOptionData} */
+		const option = {
+			name,
+			description: subcommands[name].description,
+			options: subcommands[name].args,
+			type: "SUB_COMMAND"
+		};
 
-        options.push(option);
-    }
+		options.push(option);
+	}
 
-    return options;
+	return options;
 }
 
 /**
@@ -158,33 +157,33 @@ function getSubcommandOptions (subcommands) {
  */
 
 /**
- * @typedef SubcommandGroup 
- * @type {object} 
- * @property {string} description 
- * @property {Object.<string, Subcommand>} subcommands 
+ * @typedef SubcommandGroup
+ * @type {object}
+ * @property {string} description
+ * @property {Object.<string, Subcommand>} subcommands
  */
 
 /**
- * @typedef Subcommand 
- * @type {object} 
- * @property {string} description 
- * @property {Argument[]} [args] 
- * @property {({ client, interaction, group, subcommand } : { client: import('../src/util/client'), interaction: import('discord.js').CommandInteraction, group: string, subcommand: string }) => any} [execute] 
+ * @typedef Subcommand
+ * @type {object}
+ * @property {string} description
+ * @property {Argument[]} [args]
+ * @property {({ client, interaction, group, subcommand } : { client: import('../src/util/client'), interaction: import('discord.js').CommandInteraction, group: string, subcommand: string }) => any} [execute]
  */
 
 /**
- * @typedef Argument 
- * @type {object} 
- * @property {("STRING"|"INTEGER"|"BOOLEAN"|"USER"|"CHANNEL"|"ROLE"|"MENTIONABLE"|"NUMBER")} type 
- * @property {string} name 
- * @property {string} description 
- * @property {Choice[]} [choices] 
- * @property {boolean} [required] 
+ * @typedef Argument
+ * @type {object}
+ * @property {("STRING"|"INTEGER"|"BOOLEAN"|"USER"|"CHANNEL"|"ROLE"|"MENTIONABLE"|"NUMBER")} type
+ * @property {string} name
+ * @property {string} description
+ * @property {Choice[]} [choices]
+ * @property {boolean} [required]
  */
 
 /**
- * @typedef Choice 
- * @type {object} 
- * @property {string} name 
- * @property {string|number} value 
+ * @typedef Choice
+ * @type {object}
+ * @property {string} name
+ * @property {string|number} value
  */

@@ -1,13 +1,12 @@
-//@ts-check
-
-const { Schema, model } = require('mongoose');
-const { prefabProfile } = require('../../prefab/schemas');
+// @ts-check
+const { Schema, model } = require("mongoose");
+const { prefabProfile } = require("../../prefab/schemas");
 
 const user = new Schema({
-    _id: String,
-    prefab: prefabProfile,
+	_id: String,
+	prefab: prefabProfile
 
-    // You can add your own things after this 
+	// You can add your own things after this
 });
 
-module.exports = model('users', user);
+module.exports = model("users", user);

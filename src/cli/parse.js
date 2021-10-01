@@ -1,7 +1,6 @@
-//@ts-check
+// @ts-check
+const { log } = require("./utils");
 
-const { log } = require("./utils")
-
-module.exports = async () => {
-    log("WARNING", "This is still WIP!");
-}
+module.exports = () => {
+	log("WARNING", "This is still WIP!");
+};

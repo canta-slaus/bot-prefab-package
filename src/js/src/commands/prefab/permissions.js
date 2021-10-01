@@ -1,165 +1,164 @@
-//@ts-check
-
-const Command = require('../../util/command');
-const { MessageActionRow, MessageButton } = require('discord.js');
+// @ts-check
+const Command = require("../../util/command");
+const { MessageActionRow, MessageButton } = require("discord.js");
 
 const permissions = {
-    'a': 'CREATE_INSTANT_INVITE',
-    'b': 'KICK_MEMBERS',
-    'c': 'BAN_MEMBERS',
-    'd': 'ADMINISTRATOR',
-    'e': 'ADMINISTRATOR',
-    'f': 'MANAGE_CHANNELS',
-    'g': 'MANAGE_GUILD',
-    'h': 'ADD_REACTIONS',
-    'i': 'VIEW_AUDIT_LOG',
-    'j': 'PRIORITY_SPEAKER',
-    'k': 'STREAM',
-    'l': 'VIEW_CHANNEL',
-    'm': 'SEND_MESSAGES',
-    'n': 'SEND_TTS_MESSAGES',
-    'o': 'MANAGE_MESSAGES',
-    'p': 'EMBED_LINKS',
-    'q': 'ATTACH_FILES',
-    'r': 'READ_MESSAGE_HISTORY',
-    's': 'MENTION_EVERYONE',
-    't': 'USE_EXTERNAL_EMOJIS',
-    'u': 'VIEW_GUILD_INSIGHTS',
-    'v': 'CONNECT',
-    'w': 'SPEAK',
-    'x': 'MUTE_MEMBERS',
-    'y': 'DEAFEN_MEMBERS',
-    'z': 'MOVE_MEMBERS',
-    '0': 'USE_VAD',
-    '1': 'CHANGE_NICKNAME',
-    '2': 'MANAGE_NICKNAMES',
-    '3': 'MANAGE_ROLES',
-    '4': 'MANAGE_WEBHOOKS',
-    '5': 'MANAGE_EMOJIS_AND_STICKERS',
-    '6': 'USE_APPLICATION_COMMANDS',
-    '7': 'REQUEST_TO_SPEAK',
-    '8': 'MANAGE_THREADS',
-    '9': 'USE_PUBLIC_THREADS',
-    '.': 'USE_PRIVATE_THREADS',
-    ',': 'USE_EXTERNAL_STICKERS'
+	"a": "CREATE_INSTANT_INVITE",
+	"b": "KICK_MEMBERS",
+	"c": "BAN_MEMBERS",
+	"d": "ADMINISTRATOR",
+	"e": "ADMINISTRATOR",
+	"f": "MANAGE_CHANNELS",
+	"g": "MANAGE_GUILD",
+	"h": "ADD_REACTIONS",
+	"i": "VIEW_AUDIT_LOG",
+	"j": "PRIORITY_SPEAKER",
+	"k": "STREAM",
+	"l": "VIEW_CHANNEL",
+	"m": "SEND_MESSAGES",
+	"n": "SEND_TTS_MESSAGES",
+	"o": "MANAGE_MESSAGES",
+	"p": "EMBED_LINKS",
+	"q": "ATTACH_FILES",
+	"r": "READ_MESSAGE_HISTORY",
+	"s": "MENTION_EVERYONE",
+	"t": "USE_EXTERNAL_EMOJIS",
+	"u": "VIEW_GUILD_INSIGHTS",
+	"v": "CONNECT",
+	"w": "SPEAK",
+	"x": "MUTE_MEMBERS",
+	"y": "DEAFEN_MEMBERS",
+	"z": "MOVE_MEMBERS",
+	"0": "USE_VAD",
+	"1": "CHANGE_NICKNAME",
+	"2": "MANAGE_NICKNAMES",
+	"3": "MANAGE_ROLES",
+	"4": "MANAGE_WEBHOOKS",
+	"5": "MANAGE_EMOJIS_AND_STICKERS",
+	"6": "USE_APPLICATION_COMMANDS",
+	"7": "REQUEST_TO_SPEAK",
+	"8": "MANAGE_THREADS",
+	"9": "USE_PUBLIC_THREADS",
+	".": "USE_PRIVATE_THREADS",
+	",": "USE_EXTERNAL_STICKERS"
 };
 const permsRegEx = /^[0-9a-z\,\.]{1,31}$/i;
 
 module.exports = class Channels extends Command {
-    constructor (client) {
-        super(client, {
-            name: "permissions",
-            description: "Set your own custom permissions that your users need to run this command in your server",
-            category: "Utility",
-            ownerOnly: true,
-            options: [
-                {
-                    name: "command",
-                    description: "The command you want to change permissions for",
-                    type: "STRING",
-                    required: true
-                }
-            ],
-            clientPerms: ['SEND_MESSAGES', 'EMBED_LINKS', 'ADD_REACTIONS'],
-            cooldown: 5
-        });
-    }
+	constructor (client) {
+		super(client, {
+			name: "permissions",
+			description: "Set your own custom permissions that your users need to run this command in your server",
+			category: "Utility",
+			ownerOnly: true,
+			options: [
+				{
+					name: "command",
+					description: "The command you want to change permissions for",
+					type: "STRING",
+					required: true
+				}
+			],
+			clientPerms: ["SEND_MESSAGES", "EMBED_LINKS", "ADD_REACTIONS"],
+			cooldown: 5
+		});
+	}
 
-    /**
+	/**
      * @param {object} p
      * @param {import('../../util/client')} p.client
      * @param {import('discord.js').CommandInteraction} p.interaction
      */
-    async execute ({ client, interaction }) {
-        await this.setCooldown(interaction);
+	async execute ({ client, interaction }) {
+		await this.setCooldown(interaction);
 
-        const name = interaction.options.getString("command").toLowerCase();
-        const command = client.commands.get(name);
+		const name = interaction.options.getString("command").toLowerCase();
+		const command = client.commands.get(name);
 
-        if (!command) {
-            const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
-                .setTimestamp()
-                .setDescription(`${interaction.user}, the command \`${name}\` doesn't exist.`);
-            
-            return await interaction.reply({ embeds: [embed] });
-        }
+		if (!command) {
+			const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+				.setTimestamp()
+				.setDescription(`${interaction.user}, the command \`${name}\` doesn't exist.`);
 
-        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
-            .setTimestamp()
-            .setTitle(`Command permissions for: ${command.name}`)
-            .setFooter('React with 🔁 to override the permissions.');
+			return await interaction.reply({ embeds: [embed] });
+		}
 
-        const guildInfo = await client.guildInfo.get(interaction.guildId);
+		const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+			.setTimestamp()
+			.setTitle(`Command permissions for: ${command.name}`)
+			.setFooter("React with 🔁 to override the permissions.");
 
-        if (!guildInfo?.prefab?.commandPerms || !guildInfo.prefab.commandPerms[command.name]) {
-            if (command.perms && command.perms.length !== 0) embed.setDescription('\`' + command.perms.join('\`, \`') + '\`');
-            else embed.setDescription(`${interaction.user}, you don't need any permissions to run this command.`);
-        } else {
-            embed.setDescription('\`' + guildInfo.prefab.commandPerms[command.name].join('\`, \`') + '\`');
-        }
+		const guildInfo = await client.guildInfo.get(interaction.guildId);
 
-        /** @type {import('discord.js').Message} */
-        //@ts-ignore
-        const msg = await interaction.reply({ embeds: [embed], fetchReply: true, components: [new MessageActionRow().addComponents([ new MessageButton().setCustomId("change").setLabel("Change permissions").setStyle("PRIMARY") ])] });
+		if (!guildInfo?.prefab?.commandPerms || !guildInfo.prefab.commandPerms[command.name]) {
+			if (command.perms && command.perms.length !== 0) embed.setDescription(`\`${command.perms.join("\`, \`")}\``);
+			else embed.setDescription(`${interaction.user}, you don't need any permissions to run this command.`);
+		} else {
+			embed.setDescription(`\`${guildInfo.prefab.commandPerms[command.name].join("\`, \`")}\``);
+		}
 
-        const button = await msg.awaitMessageComponent({ filter: (b) => b.customId === "change" && b.user.id === interaction.user.id, time: 30000 }).catch(() => {});
+		/** @type {import('discord.js').Message} */
+		// @ts-ignore
+		const msg = await interaction.reply({ embeds: [embed], fetchReply: true, components: [new MessageActionRow().addComponents([ new MessageButton().setCustomId("change").setLabel("Change permissions").setStyle("PRIMARY") ])] });
 
-        if (!button) {
-            const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
-                .setTimestamp()
-                .setDescription(`${interaction.user}, time is over! If you want to change the permissions, run the command again and press the button in time.`);
+		const button = await msg.awaitMessageComponent({ filter: (b) => b.customId === "change" && b.user.id === interaction.user.id, time: 30000 }).catch(() => {});
 
-            return await interaction.editReply({ embeds: [embed] });
-        }
+		if (!button) {
+			const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+				.setTimestamp()
+				.setDescription(`${interaction.user}, time is over! If you want to change the permissions, run the command again and press the button in time.`);
 
-        let text = "";
+			return await interaction.editReply({ embeds: [embed] });
+		}
 
-        const perms = Object.entries(permissions);
+		let text = "";
 
-        for (const perm of perms) text += `\`${perm[0]}\` - \`${perm[1]}\`\n`;
+		const perms = Object.entries(permissions);
 
-        embed
-            .setDescription(`${interaction.user}, reply with the permissions that you want users to have in order to use this command, e.g.: \`cd2\` If you want them to have the permissions to kick members, ban members and manage roles in order to use this command.\nReply with \`clear\` to reset permissions.`)
-            .addField('Permissions', text);
+		for (const perm of perms) text += `\`${perm[0]}\` - \`${perm[1]}\`\n`;
 
-        await button.reply({ embeds: [embed] });
+		embed
+			.setDescription(`${interaction.user}, reply with the permissions that you want users to have in order to use this command, e.g.: \`cd2\` If you want them to have the permissions to kick members, ban members and manage roles in order to use this command.\nReply with \`clear\` to reset permissions.`)
+			.addField("Permissions", text);
 
-        const reply = await client.utils.getReply(msg, { user: interaction.user, time: 60000 });
-        if (!reply) {
-            const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
-                .setTimestamp()
-                .setDescription(`${interaction.user}, time is over!.`);
+		await button.reply({ embeds: [embed] });
 
-            return await interaction.channel.send({ embeds: [embed] });
-        }
+		const reply = await client.utils.getReply(msg, { user: interaction.user, time: 60000 });
+		if (!reply) {
+			const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+				.setTimestamp()
+				.setDescription(`${interaction.user}, time is over!.`);
 
-        const content = reply.content.toLowerCase();
+			return await interaction.channel.send({ embeds: [embed] });
+		}
 
-        if (content === "clear") {
-            await client.guildInfo.findByIdAndUpdate(interaction.guildId, { $unset: { [`prefab.commandPerms.${command.name}`]: 1 } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+		const content = reply.content.toLowerCase();
 
-            embed.setDescription(`${interaction.user}, the permissions for \`${command.name}\` have been cleared.`);
-        } else {
-            if (!permsRegEx.test(content)) {
-                const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
-                    .setTimestamp()
-                    .setDescription(`${interaction.user}, that isn't a valid permission string.`);
+		if (content === "clear") {
+			await client.guildInfo.findByIdAndUpdate(interaction.guildId, { $unset: { [`prefab.commandPerms.${command.name}`]: 1 } }, { new: true, upsert: true, setDefaultsOnInsert: true });
 
-                return await interaction.channel.send({ embeds: [embed] });
-            }
+			embed.setDescription(`${interaction.user}, the permissions for \`${command.name}\` have been cleared.`);
+		} else {
+			if (!permsRegEx.test(content)) {
+				const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+					.setTimestamp()
+					.setDescription(`${interaction.user}, that isn't a valid permission string.`);
 
-            const permsArray = []
-            for (let i = 0; i < content.length; i++) {
-                if (permsArray.includes(permissions[content[i]])) continue;
-                permsArray.push(permissions[content[i]]);
-            }
+				return await interaction.channel.send({ embeds: [embed] });
+			}
 
-            await client.guildInfo.findByIdAndUpdate(interaction.guildId, { $set: { [`prefab.commandPerms.${command.name}`]: permsArray } }, { new: true, upsert: true, setDefaultsOnInsert: true });
-            embed.setDescription(`${interaction.user}, the permissions for \`${command.name}\` have been updated.`);
-        }
+			const permsArray = [];
+			for (let i = 0; i < content.length; i++) {
+				if (permsArray.includes(permissions[content[i]])) continue;
+				permsArray.push(permissions[content[i]]);
+			}
 
-        embed.spliceFields(0, 1);
+			await client.guildInfo.findByIdAndUpdate(interaction.guildId, { $set: { [`prefab.commandPerms.${command.name}`]: permsArray } }, { new: true, upsert: true, setDefaultsOnInsert: true });
+			embed.setDescription(`${interaction.user}, the permissions for \`${command.name}\` have been updated.`);
+		}
 
-        await button.editReply({ embeds: [embed] });
-    }
-}
+		embed.spliceFields(0, 1);
+
+		await button.editReply({ embeds: [embed] });
+	}
+};
