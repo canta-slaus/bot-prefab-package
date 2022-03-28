@@ -19,35 +19,34 @@ export default class Eval extends Command {
                     required: true
                 }
             ],
-            hideCommand: true
+            hideCommand: true,
+            execute: async ({ client, interaction, group, subcommand }) => {
+                let code = interaction.options.getString("code")!;
+                code = code.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+                let evaled;
+
+                try {
+                    const start = process.hrtime();
+                    evaled = eval(`(async () => { ${code} })();`);
+
+                    if (evaled instanceof Promise) {
+                        evaled = await evaled;
+                    }
+
+                    const stop = process.hrtime(start);
+                    const res = `**Output:** \`\`\`js\n${clean(client, inspect(evaled, { depth: 0 }))}\n\`\`\`\n**Time Taken:** \`\`\`${(((stop[0] * 1e9) + stop[1])) / 1e6}ms\`\`\``
+
+                    if (res.length < 2000) {
+                        await interaction.reply({ content: res, ephemeral: true });
+                    } else {
+                        const output = new MessageAttachment(Buffer.from(res), 'output.txt');
+                        await interaction.reply({ files: [output], ephemeral: true });
+                    }
+                } catch (e: any) {
+                    await interaction.reply({ content: `Error: \`\`\`xl\n${clean(client, e)}\n\`\`\``, ephemeral: true });
+                }
+            }
         });
-    }
-
-    async execute ({ client, interaction, group, subcommand }: { client: Client, interaction: CommandInteraction, group: string, subcommand: string }) {
-        let code = interaction.options.getString("code")!;
-        code = code.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
-        let evaled;
-
-        try {
-            const start = process.hrtime();
-            evaled = eval(`(async () => { ${code} })();`);
-
-            if (evaled instanceof Promise) {
-                evaled = await evaled;
-            }
-
-            const stop = process.hrtime(start);
-            const res = `**Output:** \`\`\`js\n${clean(client, inspect(evaled, { depth: 0 }))}\n\`\`\`\n**Time Taken:** \`\`\`${(((stop[0] * 1e9) + stop[1])) / 1e6}ms\`\`\``
-
-            if (res.length < 2000) {
-                await interaction.reply({ content: res, ephemeral: true });
-            } else {
-                const output = new MessageAttachment(Buffer.from(res), 'output.txt');
-                await interaction.reply({ files: [output], ephemeral: true });
-            }
-        } catch (e) {
-            await interaction.reply({ content: `Error: \`\`\`xl\n${clean(client, e)}\n\`\`\``, ephemeral: true });
-        }
     }
 }
 

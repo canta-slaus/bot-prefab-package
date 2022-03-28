@@ -13,7 +13,7 @@ export default class Cooldowns extends Command {
             subcommands: {
                 list: {
                     description: "List all cooldowns on a command",
-                    args: [
+                    options: [
                         {
                             name: "command",
                             description: "The command to check",
@@ -51,7 +51,7 @@ export default class Cooldowns extends Command {
                 },
                 set: {
                     description: "Set a cooldown for a certain role",
-                    args: [
+                    options: [
                         {
                             name: "command",
                             description: "The command to add the cooldown to",
@@ -104,7 +104,7 @@ export default class Cooldowns extends Command {
                 },
                 clear: {
                     description: "Clear all cooldowns for a command",
-                    args: [
+                    options: [
                         {
                             name: "command",
                             description: "The command to clear",

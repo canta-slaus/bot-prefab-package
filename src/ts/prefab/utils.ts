@@ -1,53 +1,21 @@
-import { CommandInteraction, GuildMember, Message, MessageEmbed, MessageReaction, PermissionString, ReactionCollector, User } from 'discord.js';
+import { BaseCommandInteraction, CommandInteraction, GuildMember, InteractionReplyOptions, Message, MessageEmbed,  PermissionString, User, MessageActionRow, MessageButton, TextBasedChannel } from 'discord.js';
 import { Client } from '../src/util/client';
-import { Command } from '../src/util/command';
+import { PrefabCommand } from './command';
 
-const reactions = ['⏪', '◀️', '⏸️', '▶️', '⏩', '🔢'];
+const paginationComponents = [
+    new MessageActionRow().addComponents([
+        new MessageButton().setCustomId("ll").setStyle("SECONDARY").setEmoji("⏪"),
+        new MessageButton().setCustomId("l").setStyle("SECONDARY").setEmoji("◀️"),
+        new MessageButton().setCustomId("stop").setStyle("SECONDARY").setEmoji("⏸️"),
+        new MessageButton().setCustomId("r").setStyle("SECONDARY").setEmoji("▶️"),
+        new MessageButton().setCustomId("rr").setStyle("SECONDARY").setEmoji("⏩"),
+    ]),
+];
 const consoleColors = {
     "SUCCESS": "\u001b[32m",
     "WARNING": "\u001b[33m",
     "ERROR": "\u001b[31m"
 };
-
-async function handleReaction ({ reaction, pageMsg, collector, pageIndex, embeds }: { reaction: MessageReaction, pageMsg: Message; collector: ReactionCollector; pageIndex: number; embeds: MessageEmbed[] }) {
-    try {
-        collector.resetTimer();
-
-        if (reaction.emoji.name === '⏩') {
-            if (pageIndex === embeds.length - 1) return embeds.length - 1;
-            pageIndex = embeds.length - 1;
-            await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-        } else if (reaction.emoji.name === '▶️') {
-            if (pageIndex < embeds.length - 1) {
-                pageIndex++;
-                await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-            } else {
-                if (pageIndex === 0) return 0;
-                pageIndex = 0;
-                await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-            }
-        } else if (reaction.emoji.name === '🗑') {
-            await pageMsg.delete();
-        } else if (reaction.emoji.name === '⏪') {
-            if (pageIndex === 0) return 0;
-            pageIndex = 0;
-            await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-        } else if (reaction.emoji.name === '◀️') {
-            if (pageIndex > 0) {
-                pageIndex--;
-                await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-            } else {
-                if (pageIndex === embeds.length - 1) return embeds.length - 1;
-                pageIndex = embeds.length - 1;
-                await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-            }
-        }
-    } catch (e) {
-        //
-    }
-
-    return pageIndex;
-}
 
 class PrefabUtils {
     client: Client;
@@ -56,77 +24,56 @@ class PrefabUtils {
         this.client = client;
     }
 
-    /**
-     * Function to automatically send paginated embeds and switch between the pages by listening to the user reactions
-     * @param {import('discord.js').Message} message - Used to send the paginated message to the channel, get the user, etc.
-     * @param {MessageEmbed[]} embeds - The array of embeds to switch between
-     * @param {object} [options] - Optional parameters
-     * @param {number} [options.time] - The max time for createReactionCollector after which all of the reactions disappear
-     * @example Examples can be seen in `src/utils/utils.md`
-     */
-    async paginate (message: Message, embeds: MessageEmbed[], options?: { time?: number }) {
-        try {
-            const pageMsg = await message.channel.send({ embeds: [embeds[0]] });
+    async paginate (interaction: CommandInteraction, embeds: MessageEmbed[], options?: { time?: number }) {
+        const msg = await this.fetchReply(interaction, { embeds: [embeds[0]], components: paginationComponents });
 
-            for (const emote of reactions) {
-                await pageMsg.react(emote);
-                await this.delay(750);
+        let pageIndex = 0;
+        const time = options?.time ?? 30000;
+
+        while (true) {
+            try {
+                const button = await msg.awaitMessageComponent({ filter: (i) => i.user.id === interaction.user.id, time });
+
+                if (button.customId === "rr") {
+                    pageIndex = embeds.length - 1;
+                    await button.update({ embeds: [embeds[pageIndex]] });
+                } else if (button.customId === "r") {
+                    if (pageIndex < embeds.length - 1) {
+                        pageIndex++;
+                        await button.update({ embeds: [embeds[pageIndex]] });
+                    } else {
+                        pageIndex = 0;
+                        await button.update({ embeds: [embeds[pageIndex]] });
+                    }
+                } else if (button.customId === "stop") {
+                    await button.update({ components: [] });
+                } else if (button.customId === "ll") {
+                    pageIndex = 0;
+                    await button.update({ embeds: [embeds[pageIndex]] });
+                } else if (button.customId === "l") {
+                    if (pageIndex > 0) {
+                        pageIndex--;
+                        await button.update({ embeds: [embeds[pageIndex]] });
+                    } else {
+                        pageIndex = embeds.length - 1;
+                        await button.update({ embeds: [embeds[pageIndex]] });
+                    }
+                }
+            } catch (e) {
+                //
             }
-
-            let pageIndex = 0;
-            let time = 30000;
-
-            if (options) {
-                if (options.time) time = options.time;
-            };
-
-            const collector = pageMsg.createReactionCollector({ filter: (reaction, user) => reactions.includes(reaction.emoji.name!) && user.id === message.author.id, time });
-            collector.on('collect', async (reaction, user) => {
-                try {
-                    pageIndex = await handleReaction({ reaction: reaction, collector: collector, embeds: embeds, pageMsg: pageMsg, pageIndex: pageIndex });
-                } catch (e) {
-                    //
-                }
-            });
-
-            collector.on('remove', async (reaction, user) => {
-                try {
-                    pageIndex = await handleReaction({ reaction: reaction, collector: collector, embeds: embeds, pageMsg: pageMsg, pageIndex: pageIndex });
-                } catch (e) {
-                    //
-                }
-            });
-
-            collector.on('end', async () => {
-                try {
-                    await pageMsg.reactions.removeAll();
-                } catch (e) {
-                    //
-                }
-            });
-        } catch (e) {
-            //
         }
     }
 
-    async getReply (message: Message, options?: { time?: number, user?: User, words?: string[], regexp?: RegExp }) {
-        let time = 30000;
-        let user = message.author;
-        let words: string[] = [];
+    async getReply (channel: TextBasedChannel, userId: string, options?: { time?: number, words?: string[], regexp?: RegExp, filter?: (msg: Message) => boolean | Promise<boolean> }) {
+        const time = options?.time ?? 30000;
 
-        if (options) {
-            if (options.time) time = options.time;
-            if (options.user) user = options.user;
-            if (options.words) words = options.words;
-        }
-
-        const filter = (msg: Message): boolean => {
-            return msg.author.id === user.id
-                   && (words.length === 0 || words.includes(msg.content.toLowerCase()))
-                   && (!options || !options.regexp || options.regexp.test(msg.content))
-        }
-
-        const msgs = await message.channel.awaitMessages({ filter, max: 1, time });
+        const msgs = await channel.awaitMessages({ filter: async (msg) => {
+            return msg.author.id === userId
+                    && (!options?.words?.length || options.words.includes(msg.content.toLowerCase()))
+                    && (!options?.regexp || options.regexp.test(msg.content))
+                    && (!options?.filter || (await options.filter(msg)));
+        }, max: 1, time });
 
         if (msgs.size > 0) return msgs.first();
         return;
@@ -162,15 +109,15 @@ class PrefabUtils {
         return embed;
     }
 
-    async getCooldown (command: Command, message: Message|CommandInteraction) {
+    async getCooldown (command: PrefabCommand, interaction: CommandInteraction) {
         let cd = command.cooldown;
 
-        if (message.guildId) {
-            const guildInfo = await this.client.guildInfo.get(message.guildId);
+        if (interaction.guildId) {
+            const guildInfo = await this.client.guildInfo.get(interaction.guildId);
             if (guildInfo.prefab.commandCooldowns && guildInfo.prefab.commandCooldowns[command.name]) {
-                let roles = Object.keys(guildInfo.prefab.commandCooldowns[command.name]);
-                //@ts-ignore
-                let highestRole = message.member.roles.cache.filter(role => roles.includes(role.id)).sort((a, b) =>  b.position - a.position).first();
+                const roles = Object.keys(guildInfo.prefab.commandCooldowns[command.name]);
+                const member = await interaction.guild!.members.fetch(interaction.user.id);
+                const highestRole = member.roles.cache.filter(role => roles.includes(role.id)).sort((a, b) =>  b.position - a.position).first();
                 if (highestRole) cd = guildInfo.prefab.commandCooldowns[command.name][highestRole.id] / 1000;
             }
         }
@@ -225,6 +172,18 @@ class PrefabUtils {
 
         if (timeStr === '') return;
         else return timeStr;
+    }
+
+    async fetchReply(interaction: BaseCommandInteraction, options: InteractionReplyOptions) {
+        options.fetchReply = true;
+        const reply = await interaction.reply(options);
+        //@ts-ignore
+        return await interaction.channel!.messages.fetch(reply.id);
+    }
+
+    async replyOrEdit(interaction: BaseCommandInteraction, options: InteractionReplyOptions) {
+        if (interaction.replied) await interaction.editReply(options);
+        else await interaction.reply(options);
     }
 }
 

@@ -3,32 +3,27 @@
 const prompts = require('prompts');
 const fs = require('fs-extra');
 const path = require('path');
-const dir = process.cwd();
 
 const { isTemplate, cap, getSettings, log } = require('./utils');
+const dir = process.cwd();
 
 const jsCommand = `//@ts-check
 
 const Command = require('../../util/command');
 
 module.exports = class $Name extends Command {
+    /**
+     * @param {import('../../util/client')} client 
+     */
     constructor (client) {
         super(client, {
             name: "$name",
             category: "$Category",
-            description: 
+            description: "$Name description",
+            execute: async ({ client, interaction, group, subcommand }) => {
+                //
+            }
         });
-    }
-
-    /**
-    * @param {object} p
-    * @param {import('../../util/client')} p.client
-    * @param {import('discord.js').CommandInteraction} p.interaction
-    * @param {string} p.group
-    * @param {string} p.subcommand
-    */
-    async execute ({ client, interaction, group, subcommand }) {
-        // 
     }
 }
 `;
@@ -42,51 +37,61 @@ export default class $Name extends Command {
         super(client, {
             name: "$name",
             category: "$Category",
-            description: 
+            description: "$Name description",
+            execute: async ({ client, interaction, group, command }) => {
+                //
+            }
         });
     }
-
-    async execute ({ client, interaction, group, subcommand }: { client: Client, interaction: CommandInteraction, group: string, subcommand: string }) {
-        // 
-    }
 }
-`
+`;
 
-module.exports = async () => {
-    if (!(await isTemplate())) return log("ERROR", "This doesn't seem to be a project made using this package!");
+/**
+ * @type {import('./utils').CLICommand}
+ */
+module.exports = {
+    long: "commands",
+    short: "c",
+    description: "Add a new command",
+    title: "Add a new command",
+    promptIndex: 2,
 
-    const { name, category } = await prompts([
-        {
-            type: "text",
-            name: "name",
-            message: "What should the name of the command be?",
-            validate: name => name?.length ? true : "Please enter a name!"
-        },
-        {
-            type: "text",
-            name: "category",
-            message: "What should the category of the command be?",
-            validate: name => name?.length ? true : "Please enter a category!"
-        }
-    ]);
+    run: async () => {
+        if (!(await isTemplate())) return log("ERROR", "This doesn't seem to be a project made using this package!");
 
-    if (!name || !category) return;
+        const { name, category } = await prompts([
+            {
+                type: "text",
+                name: "name",
+                message: "What should the name of the command be?",
+                validate: name => name?.length ? true : "Please enter a name!"
+            },
+            {
+                type: "text",
+                name: "category",
+                message: "What should the category of the command be?",
+                validate: name => name?.length ? true : "Please enter a category!"
+            }
+        ]);
 
-    const categoryPath = path.join(dir, "src", "commands", category.toLowerCase());
+        if (!name || !category) return;
 
-    const settings = await getSettings();
+        const categoryPath = path.join(dir, "src", "commands", category.toLowerCase());
 
-    log("WARNING", "Generating category and command...");
-    if (!(await fs.pathExists(categoryPath))) await fs.mkdir(categoryPath);
+        const settings = await getSettings();
 
-    const commandPath = path.join(categoryPath, name.toLowerCase() + `.${settings.language}`);
-    if (await fs.pathExists(commandPath)) return log("ERROR", "That command already exists in that category!");
+        log("WARNING", "Generating category and command...");
+        if (!(await fs.pathExists(categoryPath))) await fs.mkdir(categoryPath);
 
-    const command = settings.language === "js" ? jsCommand : tsCommand;
+        const commandPath = path.join(categoryPath, name.toLowerCase() + `.${settings.language}`);
+        if (await fs.pathExists(commandPath)) return log("ERROR", "That command already exists in that category!");
 
-    await fs.writeFile(commandPath, command.replace(/\$Name/g, cap(name.toLowerCase()))
-                                           .replace(/\$name/g, name.toLowerCase())
-                                           .replace(/\$Category/g, category));
+        const command = settings.language === "js" ? jsCommand : tsCommand;
 
-    log("SUCCESS", "Successfully create a new command!");
+        await fs.writeFile(commandPath, command.replace(/\$Name/g, cap(name.toLowerCase()))
+                                               .replace(/\$name/g, name.toLowerCase())
+                                               .replace(/\$Category/g, category));
+
+        log("SUCCESS", "Successfully created a new command!");
+    }
 }

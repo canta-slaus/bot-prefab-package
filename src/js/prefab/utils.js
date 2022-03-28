@@ -1,61 +1,21 @@
 //@ts-check
 
-const { MessageEmbed } = require("discord.js");
+const { MessageEmbed, MessageActionRow, MessageButton } = require("discord.js");
 
-const reactions = ['⏪', '◀️', '⏸️', '▶️', '⏩', '🔢'];
+const paginationComponents = [
+    new MessageActionRow().addComponents([
+        new MessageButton().setCustomId("ll").setStyle("SECONDARY").setEmoji("⏪"),
+        new MessageButton().setCustomId("l").setStyle("SECONDARY").setEmoji("◀️"),
+        new MessageButton().setCustomId("stop").setStyle("SECONDARY").setEmoji("⏸️"),
+        new MessageButton().setCustomId("r").setStyle("SECONDARY").setEmoji("▶️"),
+        new MessageButton().setCustomId("rr").setStyle("SECONDARY").setEmoji("⏩"),
+    ]),
+];
 const consoleColors = {
     "SUCCESS": "\u001b[32m",
     "WARNING": "\u001b[33m",
     "ERROR": "\u001b[31m"
 };
-
-/**
- * @param {object} p
- * @param {import('discord.js').MessageReaction} p.reaction 
- * @param {import('discord.js').Message} p.pageMsg 
- * @param {import('discord.js').ReactionCollector} p.collector 
- * @param {number} p.pageIndex
- * @param {import('discord.js').MessageEmbed[]} p.embeds
- */
-async function handleReaction ({ reaction, pageMsg, collector, pageIndex, embeds }) {
-    try {
-        collector.resetTimer();
-
-        if (reaction.emoji.name === '⏩') {
-            if (pageIndex === embeds.length - 1) return embeds.length - 1;
-            pageIndex = embeds.length - 1;
-            await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-        } else if (reaction.emoji.name === '▶️') {
-            if (pageIndex < embeds.length - 1) {
-                pageIndex++;
-                await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-            } else {
-                if (pageIndex === 0) return 0;
-                pageIndex = 0;
-                await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-            }
-        } else if (reaction.emoji.name === '🗑') {
-            await pageMsg.delete();
-        } else if (reaction.emoji.name === '⏪') {
-            if (pageIndex === 0) return 0;
-            pageIndex = 0;
-            await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-        } else if (reaction.emoji.name === '◀️') {
-            if (pageIndex > 0) {
-                pageIndex--;
-                await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-            } else {
-                if (pageIndex === embeds.length - 1) return embeds.length - 1;
-                pageIndex = embeds.length - 1;
-                await pageMsg.edit({ embeds: [embeds[pageIndex]] });
-            }
-        }
-    } catch (e) {
-        //
-    }
-
-    return pageIndex;
-}
 
 class PrefabUtils {
     /**
@@ -67,86 +27,73 @@ class PrefabUtils {
 
     /**
      * Function to automatically send paginated embeds and switch between the pages by listening to the user reactions
-     * @param {import('discord.js').Message} message - Used to send the paginated message to the channel, get the user, etc.
+     * @param {import('discord.js').CommandInteraction} interaction - Used to send the paginated message to the channel, get the user, etc.
      * @param {MessageEmbed[]} embeds - The array of embeds to switch between
      * @param {object} [options] - Optional parameters
      * @param {number} [options.time] - The max time for createReactionCollector after which all of the reactions disappear
-     * @example Examples can be seen in `src/utils/utils.md`
      */
-    async paginate (message, embeds, options) {
-        try {
-            const pageMsg = await message.channel.send({ embeds: [embeds[0]] });
+    async paginate (interaction, embeds, options = {}) {
+        const msg = await this.fetchReply(interaction, { embeds: [embeds[0]], components: paginationComponents });
 
-            for (const emote of reactions) {
-                await pageMsg.react(emote);
-                await this.delay(750);
+        let pageIndex = 0;
+        const time = options?.time ?? 30000;
+
+        while (true) {
+            try {
+                const button = await msg.awaitMessageComponent({ filter: (i) => i.user.id === interaction.user.id, time });
+
+                if (button.customId === "rr") {
+                    pageIndex = embeds.length - 1;
+                    await button.update({ embeds: [embeds[pageIndex]] });
+                } else if (button.customId === "r") {
+                    if (pageIndex < embeds.length - 1) {
+                        pageIndex++;
+                        await button.update({ embeds: [embeds[pageIndex]] });
+                    } else {
+                        pageIndex = 0;
+                        await button.update({ embeds: [embeds[pageIndex]] });
+                    }
+                } else if (button.customId === "stop") {
+                    await button.update({ components: [] });
+                } else if (button.customId === "ll") {
+                    pageIndex = 0;
+                    await button.update({ embeds: [embeds[pageIndex]] });
+                } else if (button.customId === "l") {
+                    if (pageIndex > 0) {
+                        pageIndex--;
+                        await button.update({ embeds: [embeds[pageIndex]] });
+                    } else {
+                        pageIndex = embeds.length - 1;
+                        await button.update({ embeds: [embeds[pageIndex]] });
+                    }
+                }
+            } catch (e) {
+                //
             }
-
-            let pageIndex = 0;
-            let time = 30000;
-
-            if (options) {
-                if (options.time) time = options.time;
-            };
-
-            const collector = pageMsg.createReactionCollector({ filter: (reaction, user) => reactions.includes(reaction.emoji.name) && user.id === message.author.id, time });
-            collector.on('collect', async (reaction, user) => {
-                try {
-                    pageIndex = await handleReaction({ reaction: reaction, collector: collector, embeds: embeds, pageMsg: pageMsg, pageIndex: pageIndex });
-                } catch (e) {
-                    //
-                }
-            });
-
-            collector.on('remove', async (reaction, user) => {
-                try {
-                    pageIndex = await handleReaction({ reaction: reaction, collector: collector, embeds: embeds, pageMsg: pageMsg, pageIndex: pageIndex });
-                } catch (e) {
-                    //
-                }
-            });
-
-            collector.on('end', async () => {
-                try {
-                    await pageMsg.reactions.removeAll();
-                } catch (e) {
-                    //
-                }
-            });
-        } catch (e) {
-            //
         }
     }
 
     /**
      * Function to await a reply from a specific user.
-     * @param {import('discord.js').Message} message - The message to listen to
+     * @param {import('discord.js').TextBasedChannel} channel - The channel to listen to messages for
+     * @param {string} userId - The user id that should reply
      * @param {object} [options] - Optional parameters
-     * @param {number} [options.time] - The max time for awaitMessages 
-     * @param {import('discord.js').User} [options.user] - The user to listen to messages to
-     * @param {string[]} [options.words] - Optional accepted words, will aceept any word if not provided
+     * @param {number} [options.time] - The max time for awaitMessages
+     * @param {string[]} [options.words] - Optional accepted words (lowercase)
      * @param {RegExp} [options.regexp] - Optional RegExp to accept user input that matches the RegExp
-     * @return {Promise<import('discord.js').Message>} Returns the `message` sent by the user if there was one, returns `false` otherwise.
-     * @example const reply = await getReply(message, { time: 10000, words: ['yes', 'y', 'n', 'no'] })
+     * @param {( message: import('discord.js').Message ) => boolean | Promise<boolean> } [options.filter]
+     * @return {Promise<import('discord.js').Message>} Returns the `message` sent by the user if there was one
+     * @example const reply = await client.utils.getReply(interaction.channel, interaction.user.id, { words: ['yes', 'y', 'n', 'no'] });
      */
-    async getReply (message, options) {
-        let time = 30000;
-        let user = message.author;
-        let words = [];
+    async getReply (channel, userId, options = {}) {
+        const time = options.time ?? 30000;
 
-        if (options) {
-            if (options.time) time = options.time;
-            if (options.user) user = options.user;
-            if (options.words) words = options.words;
-        }
-
-        const filter = msg => {
-            return msg.author.id === user.id
-                   && (words.length === 0 || words.includes(msg.content.toLowerCase()))
-                   && (!options || !options.regexp || options.regexp.test(msg.content))
-        }
-
-        const msgs = await message.channel.awaitMessages({ filter, max: 1, time });
+        const msgs = await channel.awaitMessages({ filter: async (msg) => {
+            return msg.author.id === userId
+                   && (!options.words?.length || options.words.includes(msg.content.toLowerCase()))
+                   && (!options?.regexp || options.regexp.test(msg.content))
+                   && (!options?.filter || (await options.filter(msg)));
+        }, max: 1, time });
 
         if (msgs.size > 0) return msgs.first();
         return;
@@ -157,7 +104,7 @@ class PrefabUtils {
      * @param {number} min - The lower bound
      * @param {number} max - The upper bound
      * @return {number}
-     * @example const rand = randomRange(0, 10)
+     * @example const rand = client.utils.randomRange(0, 10)
      */
     randomRange (min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -167,7 +114,7 @@ class PrefabUtils {
      * Function to set a timeout
      * @param {number} ms - Time to wait in milliseconds
      * @return {promise}
-     * @example await delay(5000)
+     * @example await client.utils.delay(5000)
      */
     delay (ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -213,7 +160,7 @@ class PrefabUtils {
     }
 
     /**
-     * @param {import('../src/util/command')} command - The command you want to set a cooldown for
+     * @param {import('./command')} command - The command you want to set a cooldown for
      * @param {import('discord.js').CommandInteraction} interaction - The guild ID the command is executed in
      * @return {Promise<number>}
      */
@@ -223,9 +170,9 @@ class PrefabUtils {
         if (interaction.guildId) {
             const guildInfo = await this.client.guildInfo.get(interaction.guildId);
             if (guildInfo.prefab.commandCooldowns && guildInfo.prefab.commandCooldowns[command.name]) {
-                let roles = Object.keys(guildInfo.prefab.commandCooldowns[command.name]);
-                //@ts-ignore
-                let highestRole = interaction.member.roles.cache.filter(role => roles.includes(role.id)).sort((a, b) =>  b.position - a.position).first();
+                const roles = Object.keys(guildInfo.prefab.commandCooldowns[command.name]);
+                const member = await interaction.guild.members.fetch(interaction.user.id);
+                const highestRole = member.roles.cache.filter(role => roles.includes(role.id)).sort((a, b) =>  b.position - a.position).first();
                 if (highestRole) cd = guildInfo.prefab.commandCooldowns[command.name][highestRole.id] / 1000;
             }
         }
@@ -237,7 +184,7 @@ class PrefabUtils {
      * Takes human time input and outputs time in ms (eg: 5m30s -> 330000 | 3d5h2m -> 277320000).
      * @param {string} timeStr - Time input (eg: 1m20s, 1s, 3h20m).
      * @returns {number} - Returns the human time input converted to milliseconds.
-     * @example let time = timeToMs('10s') -> 10000
+     * @example let time = client.utils.timeToMs('10s') // 10000
      */
     timeToMs (timeStr) {
         let values = getUnitAndNumber(timeStr);
@@ -262,7 +209,7 @@ class PrefabUtils {
      * @param {number} [options.unitRounding] - Amount of numbers to output (eg: 1 = 3780000 -> 1h).
      * @param {string} [options.joinString] - Specified string to join each unit (eg: ' , ').
      * @returns {string} - Returns a beautified converted string from milliseconds.
-     * @example let time = timeToMs(3780000, { format: 'medium', spaces: true, options.spaces: 2, joinstring: ', ' }); -> '1 hr, 3 mins'
+     * @example let time = client.utils.timeToMs(3780000, { format: 'medium', spaces: true, options.spaces: 2, joinstring: ', ' }); // '1 hr, 3 mins'
      */
     msToTime (time, options = {}) {
         if (
@@ -297,6 +244,27 @@ class PrefabUtils {
 
         if (timeStr === '') return undefined;
         else return timeStr;
+    }
+
+    /**
+     * @param {import('discord.js').BaseCommandInteraction} interaction 
+     * @param {import('discord.js').InteractionReplyOptions} options 
+     * @returns {Promise<import('discord.js').Message>}
+     */
+    async fetchReply(interaction, options) {
+        options.fetchReply = true;
+        const reply = await interaction.reply(options);
+        //@ts-ignore
+        return await interaction.channel.messages.fetch(reply.id);
+    }
+
+    /**
+     * @param {import('discord.js').BaseCommandInteraction} interaction 
+     * @param {import('discord.js').InteractionReplyOptions} options 
+     */
+    async replyOrEdit(interaction, options) {
+        if (interaction.replied) await interaction.editReply(options);
+        else await interaction.reply(options);
     }
 }
 

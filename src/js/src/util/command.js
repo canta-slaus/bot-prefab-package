@@ -10,6 +10,14 @@ class Command extends PrefabCommand {
     constructor(client, options) {
         super(client, options);
     }
+
+    /**
+     * @param {import('discord.js').CommandInteraction} interaction 
+     * @returns {Promise<boolean>}
+     */
+    async additionalChecks(interaction) {
+        return true;
+    }
 }
 
 module.exports = Command;

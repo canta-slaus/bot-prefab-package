@@ -17,63 +17,62 @@ export default class Help extends Command {
                 }
             ],
             guildOnly: false,
-            cooldown: 5
-        });
-    }
+            cooldown: 5,
+            execute: async ({ client, interaction, group, subcommand }) => {
+                await this.setCooldown(interaction);
 
-    async execute ({ client, interaction, group, subcommand }: { client: Client, interaction: CommandInteraction, group: string, subcommand: string }) {
-        await this.setCooldown(interaction);
+                const userInfo = await client.profileInfo.get(interaction.user.id);
 
-        const userInfo = await client.profileInfo.get(interaction.user.id);
+                const language = userInfo.prefab.language;
+                const languageHelp = client.languages[language].help.names;
 
-        const language = userInfo.prefab.language;
-        const languageHelp = client.languages[language].help.names;
+                const name = interaction.options.getString("name")?.toLowerCase();
 
-        const name = interaction.options.getString("name")?.toLowerCase();
+                if (!name) {
+                    return defaultHelp(client, interaction, languageHelp);
+                }
 
-        if (!name) {
-            return defaultHelp(client, interaction, languageHelp);
-        }
+                const command = client.commands.get(name);
 
-        const command = client.commands.get(name);
+                const category = client.categories.get(name);
 
-        const category = client.categories.get(name);
+                const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }));
 
-        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }));
+                //@ts-ignore
+                if (command && !command.hideCommand && !(command.nsfw && !interaction.channel.nsfw)) {
+                    const commandHelp = client.languages[language][command.name];
 
-        //@ts-ignore
-        if (command && !command.hideCommand && !(command.nsfw && !interaction.channel.nsfw)) {
-            const commandHelp = client.languages[language][command.name];
+                    embed
+                        .setTitle(`${command.name}`)
+                        .setAuthor(command.category ? command.category : languageHelp.noCategory)
+                        .setTimestamp();
 
-            embed
-                .setTitle(`${command.name}`)
-                .setAuthor(command.category ? command.category : languageHelp.noCategory)
-                .setTimestamp();
+                    if (commandHelp.description) embed.setDescription(commandHelp.description);
 
-            if (commandHelp.description) embed.setDescription(commandHelp.description);
+                    if (commandHelp.usage) embed.addField(languageHelp.usage, commandHelp.usage);
 
-            if (commandHelp.usage) embed.addField(languageHelp.usage, commandHelp.usage);
+                    if (commandHelp.examples) embed.addField(languageHelp.examples, commandHelp.examples);
 
-            if (commandHelp.examples) embed.addField(languageHelp.examples, commandHelp.examples);
+                    let cd = await client.utils.getCooldown(command, interaction);
+                    if (cd) embed.addField(languageHelp.cooldown, `${client.utils.msToTime(cd * 1000)}`);
 
-            let cd = await client.utils.getCooldown(command, interaction);
-            if (cd) embed.addField(languageHelp.cooldown, `${client.utils.msToTime(cd * 1000)}`);
+                    if (interaction.inGuild()) {
+                        const guildInfo = await client.guildInfo.get(interaction.guildId);
 
-            if (interaction.inGuild()) {
-                const guildInfo = await client.guildInfo.get(interaction.guildId);
+                        if (guildInfo.prefab.disabledCommands.includes(command.name)) embed.setAuthor(languageHelp.isDisabled);
+                    }
 
-                if (guildInfo.prefab.disabledCommands.includes(command.name)) embed.setAuthor(languageHelp.isDisabled);
+                    await interaction.reply({ embeds: [embed] });
+                } else if (category) {
+                    embed
+                        .setTitle(category[0])
+                        .setTimestamp()
+                        .setDescription('`' + category.slice(1).join('`, `') + '`');
+        
+                    await interaction.reply({ embeds: [embed] });
+                } else defaultHelp(client, interaction, languageHelp);
             }
-
-            await interaction.reply({ embeds: [embed] });
-        } else if (category) {
-            embed
-                .setTitle(category[0])
-                .setTimestamp()
-                .setDescription('`' + category.slice(1).join('`, `') + '`');
-
-            await interaction.reply({ embeds: [embed] });
-        } else defaultHelp(client, interaction, languageHelp);
+        });
     }
 }
 

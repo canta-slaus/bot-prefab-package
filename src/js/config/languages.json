@@ -1,5 +1,5 @@
 {
-    "english": {
+    "default": {
         "channels": {
             "description": "Check all the channels that the bot will ignore and disable/enable them.",
             "usage": "- `/channels` to display all currently disabled channels\n- `/channels [disable/enable] [channel]` to disable/enable channels."

@@ -1,70 +1,32 @@
 //@ts-check
 
-const arg = require('arg');
-const pkg = require('../../package.json');
+const prompts = require('prompts');
 
-module.exports = () => {
-    const args = arg({
-        "--help": Boolean,
-        "--version": Boolean,
-        "--new": Boolean,
-        "--update": Boolean,
-        "--commands": Boolean,
-        "--events": Boolean,
-        "--extra": Boolean,
-        "--types": Boolean,
-        "--validate": Boolean,
-        "--parse": Boolean,
-        "--info": Boolean,
-        "-h": "--help",
-        "-v": "--version",
-        "-n": "--new",
-        "-u": "--update",
-        "-c": "--commands",
-        "-e": "--events",
-        "-x": "--extra",
-        "-t": "--types",
-        "-p": "--parse",
-        "-i": "--info"
-    },
-    {
-        permissive: true
-    });
+const { getPrefix } = require('./utils');
 
-    if (args["--help"]) {
-        console.log("Usage: prefab [options]");
-        console.log("Options:");
-        console.log("  -h,    --help        Check command line options");
-        console.log("  -v,    --version     Check the version the package");
-        console.log("  -n,    --new         Create a new project");
-        console.log("  -u,    --update      Update current project");
-        console.log("  -c,    --commands    Add new command");
-        console.log("  -ev,   --events      Add new event listener(s)");
-        console.log("  -ex,   --extra       Additional tools");
-        console.log("  -t,    --types       Generate types for a schema");
-        console.log("  -val,  --validate    Check if your command names/descriptions/... are valid");
-        console.log("  -p,    --parse       Parse 'normal' slash command options to the prefab format");
-        console.log("                       to e.g. make use of the subcommand (group) handler");
-        console.log("  -i,    --info        Info about the package");
-
-        return "help";
+/**
+ * @param {object} p
+ * @param {import('./utils').CLICommand[]} p.commands
+ */
+module.exports = async ({ commands }) => {
+    let len = 0;
+    for (const command of commands) {
+        if (!command.extra && command.title.length > len) len = command.title.length;
     }
 
-    if (args["--version"]) {
-        console.log(`v${pkg.version}`);
+    const action = (await prompts([
+        {
+            type: "select",
+            name: "action",
+            message: "What would you like to do?",
+            choices: commands.filter(c => !c.extra && c.promptIndex !== -1).map((c, i, a) => ({
+                title: `${getPrefix(i, a.length)} ${c.title}${" ".repeat(len - c.title.length)}   ${c.description}`,
+                value: c.long || c.short,
+                disabled: c.disabled
+            })),
+            hint: "Use arrow keys to navigate. Hit \"ENTER\" to select."
+        }
+    ])).action;
 
-        return "version";
-    }
-
-    if (args["--new"]) return "new";
-    if (args["--update"]) return "update";
-    if (args["--commands"]) return "commands";
-    if (args["--events"]) return "events";
-    if (args["--extra"]) return "extra";
-    if (args["--types"]) return "types";
-    if (args["--validate"]) return "validate";
-    if (args["--parse"]) return "parse";
-    if (args["--info"]) return "info";
-
-    return;
+    return action;
 }

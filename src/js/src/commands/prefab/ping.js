@@ -9,22 +9,16 @@ module.exports = class Ping extends Command {
             description: "Get the bots current ping",
             category: "Misc",
             clientPerms: ['SEND_MESSAGES', 'EMBED_LINKS'],
-            cooldown: 5
+            cooldown: 5,
+            execute: async ({ client, interaction }) => {
+                await this.setCooldown(interaction);
+
+                const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
+                    .setDescription(`Pong! Latency is ${Date.now() - interaction.createdTimestamp}ms.`)
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [embed] });
+            }
         });
-    }
-
-    /**
-     * @param {object} p
-     * @param {import('../../util/client')} p.client
-     * @param {import('discord.js').CommandInteraction} p.interaction
-     */
-    async execute ({ client, interaction }) {
-        await this.setCooldown(interaction);
-
-        const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
-            .setDescription(`Pong! Latency is ${Date.now() - interaction.createdTimestamp}ms.`)
-            .setTimestamp();
-
-        await interaction.reply({ embeds: [embed] });
     }
 }

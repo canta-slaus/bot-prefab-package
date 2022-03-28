@@ -21,10 +21,9 @@ After running
 ```
 $ prefab
 ```
-it will prompt you different options to chose from. Optionally, you can also run `$ prefab -h` to check out the command line arguments to skip the first prompt.
+it will prompt you different options to chose from.
 ### New project
 To create a new project, it will ask your for a name for that project and which language you would like (JavaScript or TypeScript).\
-_More options like different databases as well as chosing which features/commands you want to have are planned for the future!_
 
 ### Update a project
 The idea of the prefab is to allow you to easily create projects _but also_ to easily update to the newest version. Here's how it works:\

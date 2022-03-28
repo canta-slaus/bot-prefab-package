@@ -10,7 +10,7 @@ const prefabGuild = {
 
 const prefabProfile = {
     language: {
-        default: 'english',
+        default: 'default',
         type: String
     },
     embedColor: {

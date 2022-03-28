@@ -3,21 +3,16 @@
 const Command = require('../util/command');
 
 module.exports = class Template extends Command {
+    /**
+     * @param {import('../util/client')} client 
+     */
     constructor (client) {
         super(client, {
             name: "template",
-            description: "This is a template"
+            description: "This is a template",
+            execute: async ({ client, interaction, group, subcommand }) => {
+                // 
+            }
         });
-    }
-
-    /**
-     * @param {object} p
-     * @param {import('../util/client')} p.client
-     * @param {import('discord.js').CommandInteraction} p.interaction
-     * @param {string} p.group
-     * @param {string} p.subcommand
-     */
-    async execute ({ client, interaction, group, subcommand }) {
-        // 
     }
 }

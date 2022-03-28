@@ -1,9 +1,9 @@
-import { Client } from "../src/util/client";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { Command } from "../src/util/command";
+import { PrefabClient } from "./client";
 
-async function registerCommands(client: Client, ...dirs: string[]) {
+async function registerCommands(client: PrefabClient, ...dirs: string[]) {
     for (const dir of dirs) {
         const files = await fs.readdir(path.join(__dirname, dir));
 
@@ -56,7 +56,7 @@ async function registerCommands(client: Client, ...dirs: string[]) {
                             commands.push(name);
                             client.categories.set('no category', commands);
                         }
-                    } catch (e) {
+                    } catch (e: any) {
                         client.utils.log("ERROR", "src/registry.ts", `Error loading commands: ${e.message}`);
                     }
                 }
@@ -65,7 +65,7 @@ async function registerCommands(client: Client, ...dirs: string[]) {
     }
 }
 
-async function registerEvents(client: Client, ...dirs: string[]) {
+async function registerEvents(client: PrefabClient, ...dirs: string[]) {
     for (const dir of dirs) {
         const files = await fs.readdir(path.join(__dirname, dir));
 
@@ -80,7 +80,7 @@ async function registerEvents(client: Client, ...dirs: string[]) {
                     try {
                         const eventModule = (await import(path.join(__dirname, dir, file))).default;
                         client.on(eventName, eventModule.bind(null, client));
-                    } catch(e) {
+                    } catch(e: any) {
                         client.utils.log("ERROR", "src/registry.ts", `Error loading events: ${e.message}`);
                     }
                 }

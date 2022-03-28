@@ -3,42 +3,53 @@
 const prompts = require('prompts');
 const fs = require('fs-extra');
 const path = require('path');
-const dir = process.cwd();
+
 const pkg = require('../../package.json');
-
 const { isTemplate, getSettings, log } = require('./utils');
+const dir = process.cwd();
 
-module.exports = async () => {
-    if (!(await isTemplate())) return log("ERROR", "This doesn't seem to be a project made using this package!");
+/**
+ * @type {import('./utils').CLICommand}
+ */
+module.exports = {
+    long: "update",
+    short: "u",
+    description: "Update the current project",
+    title: "Update a project",
+    promptIndex: 1,
 
-    const { confirm } = await prompts([
-        {
-            type: "confirm",
-            name: "confirm",
-            message: "\u001b[31mUpdating to a newer version will override the following folders: \"src/prefab\" and \"src/commands/prefab\". Any changes made will be lost, are you sure you want to continue?\u001b[0m",
-            initial: false
-        }
-    ]);
+    run: async () => {
+        if (!(await isTemplate())) return log("ERROR", "This doesn't seem to be a project made using this package!");
 
-    if (!confirm) return;
+        const { confirm } = await prompts([
+            {
+                type: "confirm",
+                name: "confirm",
+                message: "\u001b[31mUpdating to a newer version will override the following folders: \"src/prefab\" and \"src/commands/prefab\". Any changes made will be lost, are you sure you want to continue?\u001b[0m",
+                initial: false
+            }
+        ]);
 
-    const src = path.join(dir, "config", "settings.json");
+        if (!confirm) return;
 
-    log("WARNING", "Updating the project...")
-    const settings = await getSettings();
+        const src = path.join(dir, "config", "settings.json");
 
-    if (settings.version === pkg.version) return log("SUCCESS", "You already are using the newest version! Make sure to update the package itself!");
+        log("WARNING", "Updating the project...");
+        const settings = await getSettings();
 
-    const prefab = path.join(dir, "prefab");
-    await fs.remove(prefab);
-    await fs.copy(path.join(__dirname, "..", settings.language, "prefab"), prefab);
+        if (settings.version >= pkg.version) return log("SUCCESS", "You already are using the newest version! Make sure to update the package itself!");
 
-    const commands = path.join(dir, "src", "commands", "prefab");
-    await fs.remove(commands);
-    await fs.copy(path.join(__dirname, "..", settings.language, "src", "commands", "prefab"), commands);
+        const prefab = path.join(dir, "prefab");
+        await fs.remove(prefab);
+        await fs.copy(path.join(__dirname, "..", settings.language, "prefab"), prefab);
 
-    settings.version = pkg.version;
-    await fs.writeFile(src, JSON.stringify(settings, null, 4));
+        const commands = path.join(dir, "src", "commands", "prefab");
+        await fs.remove(commands);
+        await fs.copy(path.join(__dirname, "..", settings.language, "src", "commands", "prefab"), commands);
 
-    log("SUCCESS", ` Successfully updated this project to v${pkg.version}!`);
+        settings.version = pkg.version;
+        await fs.writeFile(src, JSON.stringify(settings, null, 4));
+
+        log("SUCCESS", ` Successfully updated this project to v${pkg.version}!`);
+    }
 }

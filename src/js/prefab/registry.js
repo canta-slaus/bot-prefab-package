@@ -5,7 +5,7 @@ const path = require('path');
 const Command = require('../src/util/command');
 
 /**
- * @param {import('../src/util/client')} client 
+ * @param {import('./client')} client 
  * @param  {...string} dirs 
  */
 async function registerCommands(client, ...dirs) {
@@ -74,7 +74,7 @@ async function registerCommands(client, ...dirs) {
 }
 
 /**
- * @param {import('../src/util/client')} client 
+ * @param {import('./client')} client 
  * @param {...string} dirs
  */
 async function registerEvents(client, ...dirs) {

@@ -57,7 +57,7 @@ async function guildCreate (client, guild) {
         if (guild.available) {
             const channel = getDefaultChannel(guild);
             if (!channel) return;
-    
+
             await channel.send(`Thanks for adding me! For a list of commands, use \`/help\``);
         }
     } catch (e) {
@@ -88,17 +88,16 @@ async function interactionCreate (client, interaction) {
                     if (guildInfo.prefab.disabledCommands.includes(command.name)) return await quickReply(client, interaction, "This command is currently disabled in this server.");
                     if (guildInfo.prefab.disabledChannels.includes(interaction.channelId) && !command.ignoreDisabledChannels) return await quickReply(client, interaction, "You can't use any commands in this channel.");
 
-                    //@ts-ignore
                     if (command.clientPerms && !interaction.channel.permissionsFor(interaction.guild.me).has(command.clientPerms, true)) return await quickReply(client, interaction, `I am missing the following permissions: ${client.utils.missingPermissions(interaction.guild.me, command.clientPerms)}.`);
 
-                    //@ts-ignore
-                    if (guildInfo.prefab.commandPerms && guildInfo.prefab.commandPerms[command.name] && !interaction.member.permissions.has(guildInfo.prefab.commandPerms[command.name], true))  return await quickReply(client, interaction, `You are missing the following permissions: ${client.utils.missingPermissions(interaction.member, guildInfo.prefab.commandPerms[command.name])}.`);
-                    //@ts-ignore
-                    else if (command.perms && !interaction.member.permissions.has(command.perms, true)) return await quickReply(client, interaction, `You are missing the following permissions: ${client.utils.missingPermissions(interaction.member, command.perms)}.`);
+                    const member = await interaction.guild.members.fetch(interaction.user.id);
+                    if (guildInfo.prefab.commandPerms && guildInfo.prefab.commandPerms[command.name] && !member.permissions.has(guildInfo.prefab.commandPerms[command.name], true))  return await quickReply(client, interaction, `You are missing the following permissions: ${client.utils.missingPermissions(member, guildInfo.prefab.commandPerms[command.name])}.`);
+                    else if (command.perms && !member.permissions.has(command.perms, true)) return await quickReply(client, interaction, `You are missing the following permissions: ${client.utils.missingPermissions(member, command.perms)}.`);
 
-                    //@ts-ignore
-                    if (command.nsfw && !interaction.channel.nsfw) return await quickReply(client, interaction, `This command may only be used in an NSFW channel.`);
+                    if (command.nsfw && (interaction.channel.isThread() || !interaction.channel.nsfw)) return await quickReply(client, interaction, `This command may only be used in an NSFW channel.`);
                 }
+
+                if (!(await command.additionalChecks(interaction))) return;
 
                 const cd = await client.utils.getCooldown(command, interaction);
 
@@ -127,14 +126,12 @@ async function interactionCreate (client, interaction) {
             const subcommand = interaction.options.getSubcommand(false);
 
             try {
-                if (command.groups || command.subcommands) {
-                    const sub = command.groups ? command.groups[group].subcommands[subcommand]
-                                                      : command.subcommands[subcommand];
+                let sub;
+                if (command.groups) sub = command.groups[group].subcommands[subcommand];
+                else if (command.subcommands) sub = command.subcommands[subcommand];
 
-                    if (sub.execute) return await sub.execute({ client, interaction, group, subcommand });
-                }
+                if (sub && sub.execute) return await sub.execute({ client, interaction, group, subcommand });
 
-                //@ts-ignore
                 await command.execute({ client, interaction, group, subcommand });
             } catch (e) {
                 client.utils.log("ERROR", "src/events/interaction/interactionCreate.js", `Error running command '${command.name}'`);

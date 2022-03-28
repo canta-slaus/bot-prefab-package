@@ -1,4 +1,4 @@
-import { PermissionString, Collection, ApplicationCommandPermissionData, CommandInteraction, ApplicationCommandOptionData } from "discord.js";
+import { PermissionString, Collection, ApplicationCommandPermissionData, CommandInteraction, ApplicationCommandOptionData, ApplicationCommandSubCommandData, ApplicationCommandNonOptionsData, ApplicationCommandChannelOptionData, ApplicationCommandChoicesData, ApplicationCommandAutocompleteOption, ApplicationCommandNumericOptionData, ApplicationCommandSubGroupData } from "discord.js";
 import { Client } from "../src/util/client";
 
 class PrefabCommand {
@@ -24,56 +24,37 @@ class PrefabCommand {
     canNotSetCooldown: boolean;
     groups: { [x: string]: SubcommandGroup } | null;
     subcommands: { [x: string]: Subcommand } | null;
+    execute?: ExecuteFunction;
 
-    constructor (client: Client, {
-        name = "",
-        description = "",
-        category = "No category",
-        options = [],
-        defaultPermission = true,
-        permissions = [],
-        development = true,
-        devOnly = false,
-        hideCommand = false,
-        ownerOnly = false,
-        guildOnly = true,
-        perms = [],
-        clientPerms = [],
-        nsfw = false,
-        cooldown = 0,
-        globalCooldown = true,
-        ignoreDisabledChannels = false,
-        canNotDisable = false,
-        canNotSetCooldown = true,
-        groups = null,
-        subcommands = null
-    }: CommandOptions) {
+    constructor (client: Client, options: CommandOptions) {
         this.client = client;
-        this.name = name;
-        this.description = description;
-        this.category = category;
-        this.options = options;
-        this.defaultPermission = defaultPermission;
-        this.permissions = permissions;
-        this.development = development;
-        this.devOnly = devOnly;
-        this.hideCommand = hideCommand;
-        this.ownerOnly = ownerOnly;
-        this.guildOnly = guildOnly;
-        this.perms = perms;
-        this.clientPerms = clientPerms;
-        this.nsfw = nsfw;
-        this.cooldown = cooldown;
-        this.globalCooldown = globalCooldown;
-        this.canNotDisable = canNotDisable;
-        this.canNotSetCooldown = canNotSetCooldown;
-        this.ignoreDisabledChannels = ignoreDisabledChannels;
-        this.groups = groups;
-        this.subcommands = subcommands;
+        this.name = options.name;
+        this.description = options.description;
+        this.execute = options.execute;
 
-        if (options && options.length) this.options = options;
-        else if (groups && Object.keys(groups)) this.options = getSubcommandGroupOptions(groups);
-        else if (subcommands && Object.keys(subcommands)) this.options = getSubcommandOptions(subcommands);
+        this.options = options.options ?? [];
+        this.groups = options.groups ?? null;
+        this.subcommands = options.subcommands ?? null;
+
+        if (this.groups && Object.keys(this.groups)) this.options = getSubcommandGroupOptions(this.groups);
+        else if (this.subcommands && Object.keys(this.subcommands)) this.options = getSubcommandOptions(this.subcommands);
+
+        this.category = options.category ?? "No category";
+        this.defaultPermission = options.defaultPermission ?? true;
+        this.permissions = options.permissions ?? [];
+        this.development = options.development ?? true;
+        this.devOnly = options.devOnly ?? false;
+        this.hideCommand = options.hideCommand ?? false;
+        this.ownerOnly = options.ownerOnly ?? false;
+        this.guildOnly = options.guildOnly ?? false;
+        this.perms = options.perms ?? [];
+        this.clientPerms = options.clientPerms ?? [];
+        this.nsfw = options.nsfw ?? false;
+        this.cooldown = options.cooldown ?? 0;
+        this.globalCooldown = options.globalCooldown ?? true;
+        this.canNotDisable = options.canNotDisable ?? false;
+        this.canNotSetCooldown = options.canNotSetCooldown ?? false;
+        this.ignoreDisabledChannels = options.ignoreDisabledChannels ?? false;
     }
 
     async setCooldown (interaction: CommandInteraction) {
@@ -102,42 +83,6 @@ class PrefabCommand {
 
 export { PrefabCommand, CommandOptions };
 
-function getSubcommandGroupOptions (groups: { [x: string]: SubcommandGroup }) {
-    const names = Object.keys(groups);
-    const options = [];
-
-    for (const name of names) {
-        const option: ApplicationCommandOptionData = {
-            name,
-            description: groups[name].description,
-            options: getSubcommandOptions(groups[name].subcommands),
-            type: "SUB_COMMAND_GROUP"
-        }
-
-        options.push(option);
-    }
-
-    return options;
-}
-
-function getSubcommandOptions (subcommands: { [x: string]: Subcommand }) {
-    const names = Object.keys(subcommands);
-    const options = [];
-
-    for (const name of names) {
-        const option: ApplicationCommandOptionData = {
-            name,
-            description: subcommands[name].description,
-            options: subcommands[name].args,
-            type: "SUB_COMMAND"
-        }
-
-        options.push(option);
-    }
-
-    return options;
-}
-
 declare interface SubcommandGroup {
     description: string;
     subcommands: { [x: string]: Subcommand }
@@ -145,21 +90,8 @@ declare interface SubcommandGroup {
 
 declare interface Subcommand {
     description: string;
-    args?: Argument[];
-    execute? ({ client, interaction, group, subcommand }: { client: Client, interaction: CommandInteraction, group: string, subcommand: string }): any;
-}
-
-declare interface Argument {
-    type: 'STRING'|'INTEGER'|'BOOLEAN'|'USER'|'CHANNEL'|'ROLE'|'MENTIONABLE'|'NUMBER';
-    name: string;
-    description: string;
-    choices?: Choice[];
-    required?: boolean;
-}
-
-declare interface Choice {
-    name: string;
-    value: string|number;
+    options?: (ApplicationCommandNonOptionsData | ApplicationCommandChannelOptionData | ApplicationCommandChoicesData | ApplicationCommandAutocompleteOption | ApplicationCommandNumericOptionData)[];
+    execute?: ExecuteFunction ;
 }
 
 declare interface CommandOptions {
@@ -184,4 +116,43 @@ declare interface CommandOptions {
     ignoreDisabledChannels?: boolean;
     groups?: { [x: string]: SubcommandGroup } | null;
     subcommands?: { [x: string]: Subcommand } | null;
+    execute?: ExecuteFunction;
+}
+
+type ExecuteFunction = ({ client, interaction, group, subcommand } : { client: Client, interaction: CommandInteraction, group: string, subcommand: string }) => any;
+
+function getSubcommandGroupOptions (groups: { [key: string]: SubcommandGroup }): ApplicationCommandSubGroupData[] {
+    const names = Object.keys(groups);
+    const options = [];
+
+    for (const name of names) {
+        const option: ApplicationCommandOptionData = {
+            name,
+            description: groups[name].description,
+            options: getSubcommandOptions(groups[name].subcommands),
+            type: "SUB_COMMAND_GROUP"
+        };
+
+        options.push(option);
+    }
+
+    return options;
+}
+
+function getSubcommandOptions (subcommands: { [key: string]: Subcommand }): ApplicationCommandSubCommandData[] {
+    const names = Object.keys(subcommands);
+    const options = [];
+
+    for (const name of names) {
+        const option: ApplicationCommandSubCommandData = {
+            name,
+            description: subcommands[name].description,
+            options: subcommands[name].options,
+            type: "SUB_COMMAND"
+        };
+
+        options.push(option);
+    }
+
+    return options;
 }

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 //@ts-check
 
-const prompts = require('prompts');
+const fs = require('fs').promises;
+const path = require('path');
 
-const { commands, events, info, newProject, types, update, args, extra, validate, parse } = require('./src/cli');
+const args = require('./src/cli/args');
 const { log } = require('./src/cli/utils');
 
 (async () => {
@@ -12,37 +13,24 @@ const { log } = require('./src/cli/utils');
             log("WARNING", "It looks like you're using a Node.js version below 16.x.x. Discord.js v13 requires Node.js v16.6 or higher, make sure you update!");
         }
 
-        let action = args();
+        const files = await fs.readdir(path.join(__dirname, "src", "cli"));
+        /** @type {import('./src/cli/utils').CLICommand[]} */
+        const commands = [];
 
-        if (!action) action = (await prompts([
-            {
-                type: "select",
-                name: "action",
-                message: "What would you like to do?",
-                choices: [
-                    { title: "┌ New project", description: "Create a new project!", value: "new" },
-                    { title: "├ Update a project", description: "Update your current project to the newest version!", value: "update" },
-                    { title: "├ Add command", description: "Add a new command to the current project", value: "commands" },
-                    { title: "├ Add event", description: "Add a new event listener to the current project!", value: "events" },
-                    { title: "├ Extra tools", description: "Additional tools (type generator, command validator, ...)", value: "extra" },
-                    { title: "└ Information", description: "Get some information about this CLI tool!", value: "info" }
-                ],
-                warn: "This is still WIP!",
-                hint: "Use arrow keys to navigate. Hit \"ENTER\" to select."
+        for(const file of files) {
+            const stat = await fs.lstat(path.join(__dirname, "src", "cli", file));
+
+            if(!stat.isDirectory() && file.endsWith(".js")) {
+                const command = require(path.join(__dirname, "src", "cli", file));
+                if (command.long || command.short) commands.push(command);
             }
-        ])).action;
+        }
 
-        if (!action) return;
+        commands.sort((a, b) => a.promptIndex - b.promptIndex);
 
-        if (action === 'new') await newProject();
-        else if (action === "info") await info();
-        else if (action === "update") await update();
-        else if (action === "commands") await commands();
-        else if (action === "events") await events();
-        else if (action === "types") await types();
-        else if (action === "extra") await extra();
-        else if (action === "validate") await validate();
-        else if (action === "parse") await parse();
+        const action = await args({ commands });
+
+        if (action) await commands.find(c => c.long === action || c.short === action).run({ commands });
     } catch (e) {
         log("ERROR", "Oops, something went wrong!");
         console.log(e);

@@ -35,7 +35,7 @@ module.exports = class Commands extends Command {
                 },
                 disable: {
                     description: "Disable a command",
-                    args: [
+                    options: [
                         {
                             name: "command",
                             description: "The command you want to disable",
@@ -69,7 +69,7 @@ module.exports = class Commands extends Command {
                 },
                 enable: {
                     description: "Enable a command",
-                    args: [
+                    options: [
                         {
                             name: "command",
                             description: "The command you want to enable",

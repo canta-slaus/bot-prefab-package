@@ -6,7 +6,7 @@ class Manager <K, V> {
     _client: Client;
     _model: Model<V>
     _cache: Collection<K, V>;
-;
+
     constructor (client: any, model: Model<V>) {
         this._client = client;
         this._model = model;
@@ -18,10 +18,10 @@ class Manager <K, V> {
 
         if (!item || force) {
             item = await this._model.findOneAndUpdate({ _id: key }, {  }, { new: true, upsert: true, setDefaultsOnInsert: true });
-            this._cache.set(key, item);
+            this._cache.set(key, item!);
         }
 
-        return item;
+        return item!;
     }
 
     getCache (key: K) {

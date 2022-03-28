@@ -32,7 +32,7 @@ module.exports = class Channels extends Command {
                 },
                 disable: {
                     description: "Disable a channel",
-                    args: [
+                    options: [
                         {
                             name: "channel",
                             description: "The channel you want to disable",
@@ -63,7 +63,7 @@ module.exports = class Channels extends Command {
                 },
                 enable: {
                     description: "Enable a channel",
-                    args: [
+                    options: [
                         {
                             name: "channel",
                             description: "The channel you want to enable",

@@ -7,55 +7,35 @@ class PrefabCommand {
      * @param {import('../src/util/client')} client - The client isntance
      * @param {CommandOptions} options - Settings for the slash command
      */
-    constructor (client, {
-        name = "",
-        description = "",
-        category = "No category",
-        options = [],
-        defaultPermission = true,
-        permissions = [],
-        development = true,
-        devOnly = false,
-        hideCommand = false,
-        ownerOnly = false,
-        guildOnly = true,
-        perms = [],
-        clientPerms = [],
-        nsfw = false,
-        cooldown = 0,
-        globalCooldown = true,
-        ignoreDisabledChannels = false,
-        canNotDisable = false,
-        canNotSetCooldown = true,
-        groups = null,
-        subcommands = null
-    }) {
+    constructor (client, options) {
         this.client = client;
-        this.name = name;
-        this.description = description;
-        this.category = category;
-        this.options = options;
-        this.defaultPermission = defaultPermission;
-        this.permissions = permissions;
-        this.development = development;
-        this.devOnly = devOnly;
-        this.hideCommand = hideCommand;
-        this.ownerOnly = ownerOnly;
-        this.guildOnly = guildOnly;
-        this.perms = perms;
-        this.clientPerms = clientPerms;
-        this.nsfw = nsfw;
-        this.cooldown = cooldown;
-        this.globalCooldown = globalCooldown;
-        this.canNotDisable = canNotDisable;
-        this.canNotSetCooldown = canNotSetCooldown;
-        this.ignoreDisabledChannels = ignoreDisabledChannels;
-        this.groups = groups;
-        this.subcommands = subcommands;
+        this.name = options.name;
+        this.description = options.description;
+        this.execute = options.execute;
 
-        if (options && options.length) this.options = options;
-        else if (groups && Object.keys(groups)) this.options = getSubcommandGroupOptions(this.groups);
-        else if (subcommands && Object.keys(subcommands)) this.options = getSubcommandOptions(this.subcommands);
+        this.options = options.options ?? [];
+        this.groups = options.groups ?? null;
+        this.subcommands = options.subcommands ?? null;
+
+        if (options.groups && Object.keys(options.groups)) this.options = getSubcommandGroupOptions(this.groups);
+        else if (options.subcommands && Object.keys(options.subcommands)) this.options = getSubcommandOptions(this.subcommands);
+
+        this.category = options.category ?? "No category";
+        this.defaultPermission = options.defaultPermission ?? true;
+        this.permissions = options.permissions ?? [];
+        this.development = options.development ?? true;
+        this.devOnly = options.devOnly ?? false;
+        this.hideCommand = options.hideCommand ?? false;
+        this.ownerOnly = options.ownerOnly ?? false;
+        this.guildOnly = options.guildOnly ?? false;
+        this.perms = options.perms ?? [];
+        this.clientPerms = options.clientPerms ?? [];
+        this.nsfw = options.nsfw ?? false;
+        this.cooldown = options.cooldown ?? 0;
+        this.globalCooldown = options.globalCooldown ?? true;
+        this.canNotDisable = options.canNotDisable ?? false;
+        this.canNotSetCooldown = options.canNotSetCooldown ?? false;
+        this.ignoreDisabledChannels = options.ignoreDisabledChannels ?? false;
     }
 
     /**
@@ -101,7 +81,7 @@ function getSubcommandGroupOptions (groups) {
             description: groups[name].description,
             options: getSubcommandOptions(groups[name].subcommands),
             type: "SUB_COMMAND_GROUP"
-        }
+        };
 
         options.push(option);
     }
@@ -117,13 +97,13 @@ function getSubcommandOptions (subcommands) {
     const options = [];
 
     for (const name of names) {
-        /** @type {import('discord.js').ApplicationCommandOptionData} */
+        /** @type {import('discord.js').ApplicationCommandSubCommandData} */
         const option = {
             name,
             description: subcommands[name].description,
-            options: subcommands[name].args,
+            options: subcommands[name].options,
             type: "SUB_COMMAND"
-        }
+        };
 
         options.push(option);
     }
@@ -155,36 +135,29 @@ function getSubcommandOptions (subcommands) {
  * @property {boolean} [ignoreDisabledChannels] - Whether or not this command will still run in ignored channels
  * @property {Object.<string, SubcommandGroup>} [groups] - Subcommand groups for this command
  * @property {Object.<string, Subcommand>} [subcommands] - Subcommands for this command
+ * @property {( params: ExecuteFunctionParams ) => any} [execute] - The function that will be ran when someone uses a command
+ */
+
+/**
+ * @typedef ExecuteFunctionParams
+ * @type {object}
+ * @property {import('../src/util/client')} client 
+ * @property {import('discord.js').CommandInteraction} interaction 
+ * @property {string} [group]
+ * @property {string} [subcommand]
  */
 
 /**
  * @typedef SubcommandGroup 
- * @type {object} 
- * @property {string} description 
- * @property {Object.<string, Subcommand>} subcommands 
+ * @type {object}
+ * @property {string} description
+ * @property {Object.<string, Subcommand>} subcommands
  */
 
 /**
- * @typedef Subcommand 
- * @type {object} 
- * @property {string} description 
- * @property {Argument[]} [args] 
- * @property {({ client, interaction, group, subcommand } : { client: import('../src/util/client'), interaction: import('discord.js').CommandInteraction, group: string, subcommand: string }) => any} [execute] 
- */
-
-/**
- * @typedef Argument 
- * @type {object} 
- * @property {("STRING"|"INTEGER"|"BOOLEAN"|"USER"|"CHANNEL"|"ROLE"|"MENTIONABLE"|"NUMBER")} type 
- * @property {string} name 
- * @property {string} description 
- * @property {Choice[]} [choices] 
- * @property {boolean} [required] 
- */
-
-/**
- * @typedef Choice 
- * @type {object} 
- * @property {string} name 
- * @property {string|number} value 
+ * @typedef Subcommand
+ * @type {object}
+ * @property {string} description
+ * @property {(import('discord.js').ApplicationCommandNonOptionsData | import('discord.js').ApplicationCommandChannelOptionData | import('discord.js').ApplicationCommandChoicesData | import('discord.js').ApplicationCommandAutocompleteOption | import('discord.js').ApplicationCommandNumericOptionData)[]} [options]
+ * @property {( params: ExecuteFunctionParams ) => any} [execute] - The function that will be ran when someone uses a command
  */

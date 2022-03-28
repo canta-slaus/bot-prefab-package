@@ -3,7 +3,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 
-const { isTemplate, log } = require('./utils');
+const { isTemplate, log, getSettings, getLanguages } = require('./utils');
 
 const types = [ "STRING", "INTEGER", "BOOLEAN", "USER", "CHANNEL", "ROLE", "MENTIONABLE", "NUMBER",
                 3,        4,         5,         6,      7,         8,      9,             10        ];
@@ -18,23 +18,46 @@ const commands = [];
 let allValid = true;
 let required = 0;
 
-module.exports = async () => {
-    if (!(await isTemplate())) return log("ERROR", "This doesn't seem to be a project made using this package!");
+/**
+ * @type {import('./utils').CLICommand}
+ */
+module.exports = {
+    long: "validate",
+    short: "val",
+    description: "Check if your command names/descriptions/... are valid",
+    title: "Validate commands",
+    promptIndex: 2,
+    extra: true,
 
-    await validateCommands(path.join(process.cwd(), "src", "commands"));
+    run: async () => {
+        if (!(await isTemplate())) return log("ERROR", "This doesn't seem to be a project made using this package!");
 
-    if (commands.filter(c => c.development).length > 100) logInvalidate("WARNING", "You have more than 100 guild-only commands for the development server");
-    if (commands.filter(c => !c.development).length > 100) logInvalidate("WARNING", "You have more than 100 global commands");
+        const settings = await getSettings();
 
-    if (allValid) log("SUCCESS", "Done! Didn't find any *obvious* issues in settings!");
-    else log("WARNING", "Done! Make sure to check out some of the major errors!");
+        if (settings.language !== "js") return console.log("\u001b[33m> This feature is currently limited to JavaScript!\u001b[0m");
+
+        const languages = await getLanguages();
+        await validateCommands(path.join(process.cwd(), "src", "commands"), languages);
+
+        if (commands.filter(c => c.development).length > 100) logInvalidate("WARNING", "You have more than 100 guild-only commands for the development server");
+        if (commands.filter(c => !c.development).length > 100) logInvalidate("WARNING", "You have more than 100 global commands");
+
+        if (allValid) log("SUCCESS", "Done! Didn't find any *obvious* issues in settings!");
+        else log("WARNING", "Done! Make sure to check out some of the major errors!");
+    }
 }
 
 /**
- * @param  {string} dir 
+ * @param {string} dir 
+ * @param {Object.<string, any>} languages
  */
-async function validateCommands(dir) {
+async function validateCommands(dir, languages) {
     const files = await fs.readdir(path.join(dir));
+
+    for (const lang of Object.keys(languages)) {
+        const language = languages[lang];
+        if (!language?.help) logInvalidate("ERROR", `The language '${lang}' is missing the settings for the help command`);
+    }
 
     for(const file of files) {
         const stat = await fs.lstat(path.join(dir, file));
@@ -42,18 +65,26 @@ async function validateCommands(dir) {
         if (file.includes("-ignore")) continue;
 
         if(stat.isDirectory())
-            await validateCommands(path.join(dir, file));
+            await validateCommands(path.join(dir, file), languages);
         else {
             if(file.endsWith(".js")) {
                 required = 0;
                 const cmdPath = path.join(dir, file);
                 const command = new (require(cmdPath))();
 
-                const { name, category, description, options, permissions } = command;
-
                 if (typeof command !== "object") {
                     logInvalidate("ERROR", `The file '${cmdPath}' doesn't export an object`);
                     continue;
+                }
+
+                const { name, category, description, options, permissions } = command;
+
+                for (const lang of Object.keys(languages)) {
+                    const language = languages[lang];
+                    const categories = language?.help?.names?.categories;
+                    if (!categories?.[category]) logInvalidate("ERROR", `The category translation for '${category}' is missing in the 'languages.json'`);
+                    const commandTranslation = language[name];
+                    if (!commandTranslation || !commandTranslation?.description) logInvalidate("ERROR", `The command '${name}' is missing the description in the 'languages.json'`);
                 }
 
                 try {

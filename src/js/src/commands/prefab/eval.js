@@ -20,40 +20,34 @@ module.exports = class Channels extends Command {
                     required: true
                 }
             ],
-            hideCommand: true
+            hideCommand: true,
+            execute: async ({ client, interaction }) => {
+                let code = interaction.options.getString("code");
+                code = code.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+                let evaled;
+
+                try {
+                    const start = process.hrtime();
+                    evaled = eval(`(async () => { ${code} })();`);
+
+                    if (evaled instanceof Promise) {
+                        evaled = await evaled;
+                    }
+
+                    const stop = process.hrtime(start);
+                    const res = `**Output:** \`\`\`js\n${clean(client, inspect(evaled, { depth: 0 }))}\n\`\`\`\n**Time Taken:** \`\`\`${(((stop[0] * 1e9) + stop[1])) / 1e6}ms\`\`\``
+
+                    if (res.length < 2000) {
+                        await interaction.reply({ content: res, ephemeral: true });
+                    } else {
+                        const output = new MessageAttachment(Buffer.from(res), 'output.txt');
+                        await interaction.reply({ files: [output], ephemeral: true });
+                    }
+                } catch (e) {
+                    await interaction.reply({ content: `Error: \`\`\`xl\n${clean(client, e)}\n\`\`\``, ephemeral: true });
+                }
+            }
         });
-    }
-
-    /**
-     * @param {object} p
-     * @param {import('../../util/client')} p.client
-     * @param {import('discord.js').CommandInteraction} p.interaction 
-     */
-    async execute ({ client, interaction }) {
-        let code = interaction.options.getString("code");
-        code = code.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
-        let evaled;
-
-        try {
-            const start = process.hrtime();
-            evaled = eval(`(async () => { ${code} })();`);
-
-            if (evaled instanceof Promise) {
-                evaled = await evaled;
-            }
-
-            const stop = process.hrtime(start);
-            const res = `**Output:** \`\`\`js\n${clean(client, inspect(evaled, { depth: 0 }))}\n\`\`\`\n**Time Taken:** \`\`\`${(((stop[0] * 1e9) + stop[1])) / 1e6}ms\`\`\``
-
-            if (res.length < 2000) {
-                await interaction.reply({ content: res, ephemeral: true });
-            } else {
-                const output = new MessageAttachment(Buffer.from(res), 'output.txt');
-                await interaction.reply({ files: [output], ephemeral: true });
-            }
-        } catch (e) {
-            await interaction.reply({ content: `Error: \`\`\`xl\n${clean(client, e)}\n\`\`\``, ephemeral: true });
-        }
     }
 }
 

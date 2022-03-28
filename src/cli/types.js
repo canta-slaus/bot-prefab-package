@@ -3,45 +3,57 @@
 const prompts = require('prompts');
 const fs = require('fs-extra');
 const path = require('path');
-const dir = process.cwd();
 
 const { isTemplate, cap, getSettings, log } = require('./utils');
+const dir = process.cwd();
 
-module.exports = async () => {
-    if (!(await isTemplate())) return log("ERROR", "This doesn't seem to be a project made using this package!");
+/**
+ * @type {import('./utils').CLICommand}
+ */
+module.exports = {
+    long: "types",
+    short: "t",
+    description: "Generate types for a schema file",
+    title: "Add types",
+    promptIndex: 1,
+    extra: true,
 
-    const settings = await getSettings();
+    run: async () => {
+        if (!(await isTemplate())) return log("ERROR", "This doesn't seem to be a project made using this package!");
 
-    if (settings.language !== "js") return console.log("\u001b[33m> This feature is currently limited to JavaScript!\u001b[0m")
+        const settings = await getSettings();
 
-    const schemas = await fs.readdir(path.join(dir, "src", "schemas"));
-    const { schema } = await prompts([
-        {
-            type: "select",
-            name: "schema",
-            choices: schemas.filter(f => f.endsWith('.js')).map(f => { return { title: f, value: f } }),
-            message: "Which schema would you like to generate the type for?"
-        }
-    ]);
+        if (settings.language !== "js") return console.log("\u001b[33m> This feature is currently limited to JavaScript!\u001b[0m");
 
-    if (!schema) return;
+        const schemas = await fs.readdir(path.join(dir, "src", "schemas"));
+        const { schema } = await prompts([
+            {
+                type: "select",
+                name: "schema",
+                choices: schemas.filter(f => f.endsWith('.js')).map(f => { return { title: f, value: f } }),
+                message: "Which schema would you like to generate the type for?"
+            }
+        ]);
 
-    log("WARNING", "Fetching schema and generating type...");
-    const model = require(path.join(dir, "src", "schemas", schema));
-    const types = getObjectTypes(model.schema.obj, 4);
-    log("SUCCESS", "Fetched the schema and successfully generated the type!")
+        if (!schema) return;
 
-    log("WARNING", "Adding .d.ts file...");
-    const file = path.join(dir, "src", "types", schema.replace('.js', '.d.ts'));
-    await fs.remove(file);
+        log("WARNING", "Fetching schema and generating type...");
+        const model = require(path.join(dir, "src", "schemas", schema));
+        const types = getObjectTypes(model.schema.obj, 4);
+        log("SUCCESS", "Fetched the schema and successfully generated the type!")
 
-    const name = cap(schema.replace('.js', ''));
-    await fs.writeFile(file, `declare interface ${name} {\n${types}}\n\nexport { ${name} };\n`);
-    log("SUCCESS", "Added the .d.ts file!");
+        log("WARNING", "Adding .d.ts file...");
+        const file = path.join(dir, "src", "types", schema.replace('.js', '.d.ts'));
+        await fs.remove(file);
 
-    log("CLEAR", "\u001b[34m> If this is a new schema, here is a copy-paste to add to your client in \"src/util/client.js\":\u001b[0m\n");
-    log("CLEAR", `\u001b[32m/** @type {import('../../prefab/tmanager').Manager<${types.match(/_id: (\D*?);/)[1]}, import('../types/${name.toLowerCase()}').${name}>} */\u001b[0m`);
-    log("CLEAR", `\u001b[34mthis\u001b[0m.${name.toLowerCase()} = \u001b[34mnew\u001b[0m \u001b[33mManager\u001b[0m(\u001b[34mthis\u001b[33m, require\u001b[0m(\u001b[31m'../schemas/${schema.replace('.js', '')}'\u001b[0m));`);
+        const name = cap(schema.replace('.js', '').replace(/[^a-z]/gi, "_"));
+        await fs.writeFile(file, `declare interface ${name} {\n${types}}\n\nexport { ${name} };\n`);
+        log("SUCCESS", "Added the .d.ts file!");
+
+        log("CLEAR", "\u001b[34m> If this is a new schema, here is a copy-paste to add to your client in \"src/util/client.js\":\u001b[0m\n");
+        log("CLEAR", `\u001b[32m/** @type {import('../../prefab/tmanager').Manager<${types.match(/_id: (\D*?);/)[1]}, import('../types/${name.toLowerCase()}').${name}>} */\u001b[0m`);
+        log("CLEAR", `\u001b[34mthis\u001b[0m.${name.toLowerCase()} = \u001b[34mnew\u001b[0m \u001b[33mManager\u001b[0m(\u001b[34mthis\u001b[33m, require\u001b[0m(\u001b[31m'../schemas/${schema.replace('.js', '')}'\u001b[0m));`);
+    }
 }
 
 /**
