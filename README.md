@@ -23,7 +23,7 @@ $ prefab
 ```
 it will prompt you different options to chose from.
 ### New project
-To create a new project, it will ask your for a name for that project and which language you would like (JavaScript or TypeScript).\
+To create a new project, it will ask your for a name for that project and which language you would like (JavaScript or TypeScript).
 
 ### Update a project
 The idea of the prefab is to allow you to easily create projects _but also_ to easily update to the newest version. Here's how it works:\
