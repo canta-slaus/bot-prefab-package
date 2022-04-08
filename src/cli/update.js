@@ -50,6 +50,6 @@ module.exports = {
         settings.version = pkg.version;
         await fs.writeFile(src, JSON.stringify(settings, null, 4));
 
-        log("SUCCESS", ` Successfully updated this project to v${pkg.version}!`);
+        log("SUCCESS", `Successfully updated this project to v${pkg.version}!`);
     }
 }
