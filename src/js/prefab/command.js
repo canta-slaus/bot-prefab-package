@@ -21,10 +21,10 @@ class PrefabCommand {
         else if (options.subcommands && Object.keys(options.subcommands)) this.options = getSubcommandOptions(this.subcommands);
 
         this.category = options.category ?? "No category";
-        this.defaultPermission = options.defaultPermission ?? true;
         this.permissions = options.permissions ?? [];
         this.development = options.development ?? true;
         this.devOnly = options.devOnly ?? false;
+        this.defaultPermission = this.devOnly ? false : (options.defaultPermission ?? false);
         this.hideCommand = options.hideCommand ?? false;
         this.ownerOnly = options.ownerOnly ?? false;
         this.guildOnly = options.guildOnly ?? false;
