@@ -4,7 +4,7 @@ const Command = require('../../util/command');
 const { inspect } = require('util');
 const { MessageAttachment } = require('discord.js');
 
-module.exports = class Channels extends Command {
+module.exports = class Eval extends Command {
     constructor (client) {
         super(client, {
             name: "eval",

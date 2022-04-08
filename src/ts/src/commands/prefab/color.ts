@@ -1,4 +1,3 @@
-import { CommandInteraction } from "discord.js";
 import { Client } from "../../util/client";
 import { Command } from "../../util/command";
 

@@ -1,6 +1,5 @@
 //@ts-check
 
-const { interactionCreate } = require('../../../prefab/events');
 const Command = require('../../util/command');
 
 module.exports = class Help extends Command {

@@ -45,7 +45,7 @@ const permissions = {
 };
 const permsRegEx = /^[0-9a-z\,\.]{1,31}$/i;
 
-module.exports = class Channels extends Command {
+module.exports = class Permissions extends Command {
     constructor (client) {
         super(client, {
             name: "permissions",
@@ -110,6 +110,7 @@ module.exports = class Channels extends Command {
 
                 await button.update({ embeds: [embed], components: [] });
 
+                //@ts-ignore
                 const reply = await client.utils.getReply(interaction.channel, interaction.user.id, { time: 60000 });
                 if (!reply) {
                     const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))

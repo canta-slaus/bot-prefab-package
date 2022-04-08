@@ -1,4 +1,4 @@
-import { CommandInteraction, Message, MessageActionRow, MessageButton } from "discord.js";
+import { MessageActionRow, MessageButton } from "discord.js";
 import { Client } from "../../util/client";
 import { Command } from "../../util/command";
 
@@ -109,7 +109,8 @@ export default class Permissions extends Command {
 
                 await button.update({ embeds: [embed], components: [] });
 
-                const reply = await client.utils.getReply(interaction.channel!, interaction.user.id, { time: 60000 });
+                //@ts-ignore
+                const reply = await client.utils.getReply(interaction.channel, interaction.user.id, { time: 60000 });
                 if (!reply) {
                     const embed = (await client.utils.CustomEmbed({ userID: interaction.user.id }))
                         .setTimestamp()
