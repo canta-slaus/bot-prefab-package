@@ -1,6 +1,6 @@
-import { BaseCommandInteraction, CommandInteraction, GuildMember, InteractionReplyOptions, Message, MessageEmbed,  PermissionString, User, MessageActionRow, MessageButton, TextBasedChannel } from 'discord.js';
+import {  CommandInteraction, GuildMember, InteractionReplyOptions, Message, MessageEmbed,  PermissionString, MessageActionRow, MessageButton, TextChannel, MessageComponentInteraction } from 'discord.js';
 import { Client } from '../src/util/client';
-import { PrefabCommand } from './command';
+import { Command } from '../src/util/command';
 
 const paginationComponents = [
     new MessageActionRow().addComponents([
@@ -32,40 +32,33 @@ class PrefabUtils {
 
         while (true) {
             try {
-                const button = await msg.awaitMessageComponent({ filter: (i) => i.user.id === interaction.user.id, time });
+                const collector = msg.createMessageComponentCollector({ componentType: "BUTTON", filter: (b) => b.user.id === interaction.user.id, idle: time });
 
-                if (button.customId === "rr") {
-                    pageIndex = embeds.length - 1;
-                    await button.update({ embeds: [embeds[pageIndex]] });
-                } else if (button.customId === "r") {
-                    if (pageIndex < embeds.length - 1) {
-                        pageIndex++;
-                        await button.update({ embeds: [embeds[pageIndex]] });
-                    } else {
-                        pageIndex = 0;
-                        await button.update({ embeds: [embeds[pageIndex]] });
-                    }
-                } else if (button.customId === "stop") {
-                    await button.update({ components: [] });
-                } else if (button.customId === "ll") {
-                    pageIndex = 0;
-                    await button.update({ embeds: [embeds[pageIndex]] });
-                } else if (button.customId === "l") {
-                    if (pageIndex > 0) {
-                        pageIndex--;
-                        await button.update({ embeds: [embeds[pageIndex]] });
-                    } else {
+                collector.on("collect", async (button) => {
+                    if (button.customId === "rr") {
                         pageIndex = embeds.length - 1;
-                        await button.update({ embeds: [embeds[pageIndex]] });
+                    } else if (button.customId === "r") {
+                        if (pageIndex < embeds.length - 1) pageIndex++;
+                        else pageIndex = 0;
+                    } else if (button.customId === "stop") {
+                        await button.update({ components: [] });
+                        collector.stop();
+                    } else if (button.customId === "ll") {
+                        pageIndex = 0;
+                    } else if (button.customId === "l") {
+                        if (pageIndex > 0) pageIndex--;
+                        else pageIndex = embeds.length - 1;
                     }
-                }
+
+                    await button.update({ embeds: [embeds[pageIndex]] });
+                });
             } catch (e) {
                 //
             }
         }
     }
 
-    async getReply (channel: TextBasedChannel, userId: string, options?: { time?: number, words?: string[], regexp?: RegExp, filter?: (msg: Message) => boolean | Promise<boolean> }) {
+    async getReply (channel: TextChannel, userId: string, options?: { time?: number, words?: string[], regexp?: RegExp, filter?: (msg: Message) => boolean | Promise<boolean> }) {
         const time = options?.time ?? 30000;
 
         const msgs = await channel.awaitMessages({ filter: async (msg) => {
@@ -109,7 +102,7 @@ class PrefabUtils {
         return embed;
     }
 
-    async getCooldown (command: PrefabCommand, interaction: CommandInteraction) {
+    async getCooldown (command: Command, interaction: CommandInteraction) {
         let cd = command.cooldown;
 
         if (interaction.guildId) {
@@ -174,16 +167,61 @@ class PrefabUtils {
         else return timeStr;
     }
 
-    async fetchReply(interaction: BaseCommandInteraction, options: InteractionReplyOptions) {
+    async fetchReply(interaction: CommandInteraction | MessageComponentInteraction, options: InteractionReplyOptions) {
         options.fetchReply = true;
         const reply = await interaction.reply(options);
         //@ts-ignore
         return await interaction.channel!.messages.fetch(reply.id);
     }
 
-    async replyOrEdit(interaction: BaseCommandInteraction, options: InteractionReplyOptions) {
+    async replyOrEdit(interaction: CommandInteraction | MessageComponentInteraction, options: InteractionReplyOptions) {
         if (interaction.replied) await interaction.editReply(options);
         else await interaction.reply(options);
+    }
+
+    /**
+     * @param {import('discord.js').BaseCommandInteraction} interaction 
+     * @param {object} options 
+     * @param {number} [options.time]
+     * @param {number} [options.initialPage]
+     * @param {number} [options.maxPages]
+     * @param {number} [options.fastForward]
+     * @param {( page: number ) => Promise<import('discord.js').MessageEmbed>} options.pages
+     */
+     async pagination(interaction: CommandInteraction, options: { time?: number, initialPage?: number, maxPages?: number, fastForward?: number, pages: (page: number) => MessageEmbed | Promise<MessageEmbed> }) {
+        const time = options.time ?? 30000;
+        const pages = options.pages;
+        const maxPages = options.maxPages ?? null;
+        const fastForward = options.fastForward ?? 1;
+
+        let page = options.initialPage ?? 0;
+        let embed = await pages(page);
+
+        const reply = await interaction.reply({ fetchReply: true, embeds: [embed], components: paginationComponents });
+        const msg = await interaction.channel!.messages.fetch(reply.id);
+
+        const collector = msg.createMessageComponentCollector({ componentType: "BUTTON", filter: (b) => b.user.id === interaction.user.id, idle: time });
+
+        collector.on('collect', async (button) => {
+            if (button.customId === "rr") {
+                if (maxPages) page = maxPages - 1;
+                else page += fastForward;
+            } else if (button.customId === "r") {
+                if (!maxPages || page < maxPages - 1) page++;
+                else page = 0;
+            } else if (button.customId === "stop") {
+                await button.update({ components: [] });
+                collector.stop();
+            } else if (button.customId === "ll") {
+                page = 0;
+            } else if (button.customId === "l") {
+                if (page > 0) page--;
+                else if (maxPages) page = maxPages - 1;
+            }
+
+            embed = await pages(page);
+            await button.update({ embeds: [embed] });
+        });
     }
 }
 

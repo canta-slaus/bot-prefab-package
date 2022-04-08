@@ -40,33 +40,26 @@ class PrefabUtils {
 
         while (true) {
             try {
-                const button = await msg.awaitMessageComponent({ filter: (i) => i.user.id === interaction.user.id, time });
+                const collector = msg.createMessageComponentCollector({ componentType: "BUTTON", filter: (b) => b.user.id === interaction.user.id, idle: time });
 
-                if (button.customId === "rr") {
-                    pageIndex = embeds.length - 1;
-                    await button.update({ embeds: [embeds[pageIndex]] });
-                } else if (button.customId === "r") {
-                    if (pageIndex < embeds.length - 1) {
-                        pageIndex++;
-                        await button.update({ embeds: [embeds[pageIndex]] });
-                    } else {
-                        pageIndex = 0;
-                        await button.update({ embeds: [embeds[pageIndex]] });
-                    }
-                } else if (button.customId === "stop") {
-                    await button.update({ components: [] });
-                } else if (button.customId === "ll") {
-                    pageIndex = 0;
-                    await button.update({ embeds: [embeds[pageIndex]] });
-                } else if (button.customId === "l") {
-                    if (pageIndex > 0) {
-                        pageIndex--;
-                        await button.update({ embeds: [embeds[pageIndex]] });
-                    } else {
+                collector.on("collect", async (button) => {
+                    if (button.customId === "rr") {
                         pageIndex = embeds.length - 1;
-                        await button.update({ embeds: [embeds[pageIndex]] });
+                    } else if (button.customId === "r") {
+                        if (pageIndex < embeds.length - 1) pageIndex++;
+                        else pageIndex = 0;
+                    } else if (button.customId === "stop") {
+                        await button.update({ components: [] });
+                        collector.stop();
+                    } else if (button.customId === "ll") {
+                        pageIndex = 0;
+                    } else if (button.customId === "l") {
+                        if (pageIndex > 0) pageIndex--;
+                        else pageIndex = embeds.length - 1;
                     }
-                }
+
+                    await button.update({ embeds: [embeds[pageIndex]] });
+                });
             } catch (e) {
                 //
             }
@@ -75,7 +68,7 @@ class PrefabUtils {
 
     /**
      * Function to await a reply from a specific user.
-     * @param {import('discord.js').TextBasedChannel} channel - The channel to listen to messages for
+     * @param {import('discord.js').TextChannel} channel - The channel to listen to messages for
      * @param {string} userId - The user id that should reply
      * @param {object} [options] - Optional parameters
      * @param {number} [options.time] - The max time for awaitMessages
@@ -160,8 +153,8 @@ class PrefabUtils {
     }
 
     /**
-     * @param {import('./command')} command - The command you want to set a cooldown for
-     * @param {import('discord.js').CommandInteraction} interaction - The guild ID the command is executed in
+     * @param {import('./command')} command - The command you want to get the cooldown for
+     * @param {import('discord.js').CommandInteraction} interaction - The command interaction
      * @return {Promise<number>}
      */
     async getCooldown (command, interaction) {
@@ -247,7 +240,7 @@ class PrefabUtils {
     }
 
     /**
-     * @param {import('discord.js').BaseCommandInteraction} interaction 
+     * @param {import('discord.js').CommandInteraction|import('discord.js').MessageComponentInteraction} interaction 
      * @param {import('discord.js').InteractionReplyOptions} options 
      * @returns {Promise<import('discord.js').Message>}
      */
@@ -259,12 +252,57 @@ class PrefabUtils {
     }
 
     /**
-     * @param {import('discord.js').BaseCommandInteraction} interaction 
+     * @param {import('discord.js').CommandInteraction|import('discord.js').MessageComponentInteraction} interaction 
      * @param {import('discord.js').InteractionReplyOptions} options 
      */
     async replyOrEdit(interaction, options) {
         if (interaction.replied) await interaction.editReply(options);
         else await interaction.reply(options);
+    }
+
+    /**
+     * @param {import('discord.js').CommandInteraction} interaction 
+     * @param {object} options 
+     * @param {number} [options.time]
+     * @param {number} [options.initialPage]
+     * @param {number} [options.maxPages]
+     * @param {number} [options.fastForward]
+     * @param {( page: number ) => import('discord.js').MessageEmbed | Promise<import('discord.js').MessageEmbed>} options.pages
+     */
+     async pagination(interaction, options) {
+        const time = options.time ?? 30000;
+        const pages = options.pages;
+        const maxPages = options.maxPages ?? null;
+        const fastForward = options.fastForward ?? 1;
+
+        let page = options.initialPage ?? 0;
+        let embed = await pages(page);
+
+        const reply = await interaction.reply({ fetchReply: true, embeds: [embed], components: paginationComponents });
+        const msg = await interaction.channel.messages.fetch(reply.id);
+
+        const collector = msg.createMessageComponentCollector({ componentType: "BUTTON", filter: (b) => b.user.id === interaction.user.id, idle: time });
+
+        collector.on('collect', async (button) => {
+            if (button.customId === "rr") {
+                if (maxPages) page = maxPages - 1;
+                else page += fastForward;
+            } else if (button.customId === "r") {
+                if (!maxPages || page < maxPages - 1) page++;
+                else page = 0;
+            } else if (button.customId === "stop") {
+                await button.update({ components: [] });
+                collector.stop();
+            } else if (button.customId === "ll") {
+                page = 0;
+            } else if (button.customId === "l") {
+                if (page > 0) page--;
+                else if (maxPages) page = maxPages - 1;
+            }
+
+            embed = await pages(page);
+            await button.update({ embeds: [embed] });
+        });
     }
 }
 
