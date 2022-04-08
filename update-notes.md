@@ -1,3 +1,19 @@
+# 80/04/2022 (v3.3.0)
+- updated types of the `interaction` for `fetchReply(interaction, options)` and `replyOrEdit(interaction, options)`
+- updated `paginate()` to look less messy and use a collector instead of calling `awaitMesssageComponent`
+- fixed eval and permissions command class name (previously `Channels`, good old copy-pasting)
+- fixed JSDoc string for `getCooldown(command, interaction)`
+- fixed `Command.defaultPermission` when using `devOnly`
+- deleted random `const { interactionCreate } = require('../../../prefab/events');` from `help.js`
+- added `pagination()` function, example usage:
+```js
+await client.utils.pagination(interaction, { time: 30000, maxPages: 10, pages: n => {
+    return new MessageEmbed()
+        .setDescription(`This is page ${n}`);
+} });
+```
+- Better docs coming soon!
+
 # 28/03/2022 (v3.2.0)
 - **There are some breaking changes in this update (listed at the end)**
 - A lot of CLI-side changes (mostly structural changes and bug fixes)
