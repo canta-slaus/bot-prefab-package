@@ -24,7 +24,7 @@ class PrefabCommand {
         this.permissions = options.permissions ?? [];
         this.development = options.development ?? true;
         this.devOnly = options.devOnly ?? false;
-        this.defaultPermission = this.devOnly ? false : (options.defaultPermission ?? false);
+        this.defaultPermission = this.devOnly ? false : (options.defaultPermission ?? true);
         this.hideCommand = options.hideCommand ?? false;
         this.ownerOnly = options.ownerOnly ?? false;
         this.guildOnly = options.guildOnly ?? false;
