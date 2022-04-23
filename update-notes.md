@@ -1,4 +1,7 @@
-# 80/04/2022 (v3.3.0)
+# 20/04/2022
+- previous fix for `Command.defaultPermission` was setting the wrong value when the command isn't `devOnly`
+
+# 08/04/2022 (v3.3.0)
 - updated types of the `interaction` for `fetchReply(interaction, options)` and `replyOrEdit(interaction, options)`
 - updated `paginate()` to look less messy and use a collector instead of calling `awaitMesssageComponent`
 - fixed eval and permissions command class name (previously `Channels`, good old copy-pasting)
